@@ -1,0 +1,58 @@
+# Compiled class file
+*.class
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# Intellij
+*.ipr
+*.iml
+*.iws
+.idea/
+
+# Maven
+target/
+
+# Gradle
+build
+.gradle
+
+# Log file
+*.log
+log/
+
+# out
+**/out/
+
+# Mac
+.DS_Store
+
+# others
+*.jar
+*.war
+*.zip
+*.tar
+*.tar.gz
+*.pid
+*.orig
+temp/
+
+# 忽略node_modules目录
+node_modules/
+ 
+# 忽略Logs
+logs
+*.log
+ 
+# 忽略/dist目录，相对.gitignore文件所在目录
+/dist
+ 
+# 忽略.env文件
+.env
+ 
+# 忽略IDE的配置文件
+.idea/
+.vscode/
+*.sw*
