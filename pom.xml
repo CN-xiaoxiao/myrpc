@@ -11,35 +11,27 @@
     <modules>
         <module>demo</module>
         <module>myrpc-framework</module>
-        <module>myrpc-framework</module>
         <module>myrpc-framework/myrpc-common</module>
         <module>myrpc-framework/myrpc-core</module>
         <module>myrpc-manager</module>
+        <module>demo/myrpc-api</module>
+        <module>demo/myrpc-consumer-demo</module>
+        <module>demo/myrpc-provider-demo</module>
     </modules>
 
     <properties>
-        <maven.compiler.source>20</maven.compiler.source>
-        <maven.compiler.target>20</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <netty-version>4.1.86.Final</netty-version>
-        <junit-version>4.13.2</junit-version>
-        <zookeeper-version>3.8.2</zookeeper-version>
-        <logback-version>1.4.7</logback-version>
-        <fastjson2-version>2.0.38</fastjson2-version>
-        <commons-lang3-version>3.12.0</commons-lang3-version>
-        <lombok-version>1.18.28</lombok-version>
+        <netty.version>4.1.86.Final</netty.version>
+        <junit.version>4.13.2</junit.version>
+        <zookeeper.version>3.8.2</zookeeper.version>
+        <logback.version>1.4.8</logback.version>
+        <fastjson2.version>2.0.38</fastjson2.version>
+        <commons-lang3.version>3.12.0</commons-lang3.version>
+        <lombok.version>1.18.26</lombok.version>
     </properties>
-
-    <dependencies>
-        <!-- commons-lang3 -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>${commons-lang3-version}</version>
-        </dependency>
-
-    </dependencies>
 
     <dependencyManagement>
         <dependencies>
@@ -47,45 +39,49 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
-                <version>${netty-version}</version>
+                <version>${netty.version}</version>
             </dependency>
             <!-- https://mvnrepository.com/artifact/junit/junit -->
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>${junit-version}</version>
+                <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
             <!-- https://mvnrepository.com/artifact/org.apache.zookeeper/zookeeper -->
             <dependency>
                 <groupId>org.apache.zookeeper</groupId>
                 <artifactId>zookeeper</artifactId>
-                <version>${zookeeper-version}</version>
+                <version>${zookeeper.version}</version>
             </dependency>
             <!--日志-->
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>${logback-version}</version>
-                <scope>test</scope>
+                <version>${logback.version}</version>
             </dependency>
 
             <!-- fastjson -->
             <dependency>
                 <groupId>com.alibaba.fastjson2</groupId>
                 <artifactId>fastjson2</artifactId>
-                <version>${fastjson2-version}</version>
+                <version>${fastjson2.version}</version>
             </dependency>
 
             <!-- lombok -->
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>${lombok-version}</version>
-                <scope>provided</scope>
+                <version>${lombok.version}</version>
+            </dependency>
+
+            <!-- commons-lang3 -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
             </dependency>
 
         </dependencies>
     </dependencyManagement>
-
 </project>
