@@ -1,8 +1,9 @@
 package com.xiaoxiao;
 
+import com.xiaoxiao.discovery.RegistryConfig;
 import com.xiaoxiao.impl.HelloMyrpcImpl;
 
-public class Application {
+public class ProviderApplication {
     public static void main(String[] args) {
         // 服务提供方，注册服务，启动服务
         // 1、封装要发布的服务
@@ -17,6 +18,6 @@ public class Application {
                 .registry(new RegistryConfig("zookeeper://127.0.0.1:2181")) // 配置注册中心
                 .protocol(new ProtocolConfig("jdk"))    // 配置序列化协议
                 .publish(service)   // 发布服务
-                .start();
+                .start();   // 启动服务
     }
 }

@@ -1,6 +1,8 @@
 package com.xiaoxiao;
 
-public class Application {
+import com.xiaoxiao.discovery.RegistryConfig;
+
+public class ConsumerApplication {
     public static void main(String[] args) {
 
         // 获取代理对象
