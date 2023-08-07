@@ -2,12 +2,23 @@ package com.xiaoxiao;
 
 import com.xiaoxiao.discovery.Registry;
 import com.xiaoxiao.discovery.RegistryConfig;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.sctp.nio.NioSctpServerChannel;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 
 
+import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -24,6 +35,10 @@ public class MyrpcBootstrap {
     private Registry registry;
     // 维护已经发布且暴露的服务列表 key-> interface的全限定名，value-> ServiceConfig
     private static final Map<String, ServiceConfig<?>> SERVICE_LIST = new ConcurrentHashMap<>(16);
+    // 连接的缓存
+    public static final Map<InetSocketAddress, Channel> CHANNEL_CACHE = new ConcurrentHashMap<>(16);
+    // 全局的对外挂起的 completableFuture
+    public static final Map<Long, CompletableFuture<Object>> PENDING_REQUEST = new ConcurrentHashMap<>(128);
 
     // 维护的zookeeper实例
 //    private ZooKeeper zooKeeper;
@@ -108,11 +123,47 @@ public class MyrpcBootstrap {
      * 启动netty服务
      */
     public void start() {
+        // 1、创建eventLoop，boss只负责处理请求，并将请求分发至worker
+        EventLoopGroup boss = new NioEventLoopGroup(2);
+        EventLoopGroup worker = new NioEventLoopGroup(10);
+
+
         try {
-            Thread.sleep(1000000);
+            // 2、服务器引导程序
+            ServerBootstrap serverBootstrap = new ServerBootstrap();
+            // 3、配置服务器
+            serverBootstrap = serverBootstrap.group(boss, worker)
+                    .channel(NioServerSocketChannel.class)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel socketChannel) throws Exception {
+                            socketChannel.pipeline().addLast(new SimpleChannelInboundHandler<>() {
+                                @Override
+                                protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
+                                    ByteBuf byteBuf = (ByteBuf) msg;
+                                    log.info("byteBuf-->{}", byteBuf.toString(Charset.defaultCharset()));
+
+                                    channelHandlerContext.channel().writeAndFlush(Unpooled.copiedBuffer("myrpc--hello".getBytes()));
+                                }
+                            });
+                        }
+                    });
+            // 4、绑定端口
+            ChannelFuture channelFuture = serverBootstrap.bind(port).sync();
+
+            channelFuture.channel().closeFuture().sync();
+
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
+        } finally {
+            try {
+                boss.shutdownGracefully().sync();
+                worker.shutdownGracefully().sync();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
     }
 
 

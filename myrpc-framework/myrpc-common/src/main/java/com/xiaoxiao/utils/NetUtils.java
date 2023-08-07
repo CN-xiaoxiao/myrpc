@@ -32,7 +32,10 @@ public class NetUtils {
                         continue;
                     }
                     String ipAddress = addr.getHostAddress();
-                    System.out.println("局域网IP地址：" + ipAddress);
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("局域网IP地址：{}", ipAddress);
+                    }
 
                     return ipAddress;
                 }
