@@ -3,8 +3,11 @@ package com.xiaoxiao.proxy.handler;
 import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.NettyBootstrapInitializer;
 import com.xiaoxiao.discovery.Registry;
+import com.xiaoxiao.enumeration.RequestType;
 import com.xiaoxiao.exceptions.DiscoveryException;
 import com.xiaoxiao.exceptions.NetWorkException;
+import com.xiaoxiao.transport.message.MyrpcRequest;
+import com.xiaoxiao.transport.message.RequestPayload;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
@@ -51,15 +54,30 @@ public class RpcConsumerInvocationHandler implements InvocationHandler {
         // 2、使用netty连接服务器，发送调用的服务的名字+方法名字+参数列表，得到结果
         Channel channel = getAvailableChannel(address);
 
-        // Todo 封装报文
+        // 封装报文
+        RequestPayload requestPayload = RequestPayload.builder()
+                .interfaceName(interfaceRef.getName())
+                .methodName(method.getName())
+                .parametersType(method.getParameterTypes())
+                .parametersValue(args)
+                .returnType(method.getReturnType())
+                .build();
 
+        // Todo 对各种请求id和请求类型进行处理
+        MyrpcRequest myrpcRequest = MyrpcRequest.builder()
+                .requestId(1L)
+                .compressType((byte) 1)
+                .requestType((RequestType.REQUEST.getId()))
+                .serializeType((byte) 1)
+                .requestPayload(requestPayload)
+                .build();
 
         // 异步策略读取返回结果
         CompletableFuture<Object> completableFuture = new CompletableFuture<>();
         // 将completableFuture 暴露出去
         MyrpcBootstrap.PENDING_REQUEST.put(1L,completableFuture);
 
-        channel.writeAndFlush(Unpooled.copiedBuffer("hello".getBytes()))
+        channel.writeAndFlush(myrpcRequest)
                 .addListener( (ChannelFutureListener) promise -> {
                     if (!promise.isSuccess()) {
                         completableFuture.completeExceptionally(promise.cause());

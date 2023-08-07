@@ -1,5 +1,7 @@
 package com.xiaoxiao;
 
+import com.xiaoxiao.channelHandler.handler.MethodCallHandler;
+import com.xiaoxiao.channelHandler.handler.MyrpcMessageDecoder;
 import com.xiaoxiao.discovery.Registry;
 import com.xiaoxiao.discovery.RegistryConfig;
 import io.netty.bootstrap.ServerBootstrap;
@@ -10,6 +12,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.sctp.nio.NioSctpServerChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -34,7 +37,7 @@ public class MyrpcBootstrap {
     // 注册中心
     private Registry registry;
     // 维护已经发布且暴露的服务列表 key-> interface的全限定名，value-> ServiceConfig
-    private static final Map<String, ServiceConfig<?>> SERVICE_LIST = new ConcurrentHashMap<>(16);
+    public static final Map<String, ServiceConfig<?>> SERVICE_LIST = new ConcurrentHashMap<>(16);
     // 连接的缓存
     public static final Map<InetSocketAddress, Channel> CHANNEL_CACHE = new ConcurrentHashMap<>(16);
     // 全局的对外挂起的 completableFuture
@@ -137,15 +140,10 @@ public class MyrpcBootstrap {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            socketChannel.pipeline().addLast(new SimpleChannelInboundHandler<>() {
-                                @Override
-                                protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
-                                    ByteBuf byteBuf = (ByteBuf) msg;
-                                    log.info("byteBuf-->{}", byteBuf.toString(Charset.defaultCharset()));
-
-                                    channelHandlerContext.channel().writeAndFlush(Unpooled.copiedBuffer("myrpc--hello".getBytes()));
-                                }
-                            });
+                            socketChannel.pipeline()
+                                    .addLast(new LoggingHandler())
+                                    .addLast(new MyrpcMessageDecoder())
+                                    .addLast(new MethodCallHandler());
                         }
                     });
             // 4、绑定端口
