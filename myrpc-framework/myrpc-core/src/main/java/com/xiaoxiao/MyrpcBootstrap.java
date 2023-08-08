@@ -30,6 +30,7 @@ public class MyrpcBootstrap {
     private RegistryConfig registryConfig;
     private ProtocolConfig protocolConfig;
     private int port = 8088;
+    public static final IdGenerator ID_GENERATOR = new IdGenerator(1,2);
     // 注册中心
     private Registry registry;
     // 维护已经发布且暴露的服务列表 key-> interface的全限定名，value-> ServiceConfig
