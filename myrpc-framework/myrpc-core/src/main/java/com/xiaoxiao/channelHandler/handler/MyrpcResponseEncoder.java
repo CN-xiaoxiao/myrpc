@@ -1,5 +1,7 @@
 package com.xiaoxiao.channelHandler.handler;
 
+import com.xiaoxiao.serialize.Serializer;
+import com.xiaoxiao.serialize.SerializerFactory;
 import com.xiaoxiao.transport.message.MessageFormatConstant;
 import com.xiaoxiao.transport.message.MyrpcRequest;
 import com.xiaoxiao.transport.message.MyrpcResponse;
@@ -41,8 +43,14 @@ public class MyrpcResponseEncoder extends MessageToByteEncoder<MyrpcResponse> {
 
         byteBuf.writeLong(myrpcResponse.getRequestId());
 
+        // Todo 压缩
 
-        byte[] body = getBodyBytes(myrpcResponse.getBody());
+        // 对响应进行序列化
+        Serializer serializer = SerializerFactory
+                .getSerializer(myrpcResponse.getSerializeType())
+                .getSerializer();
+        byte[] body = serializer.serialize(myrpcResponse.getBody());
+
         if (body!=null) {
             byteBuf.writeBytes(body);
         }
@@ -60,27 +68,6 @@ public class MyrpcResponseEncoder extends MessageToByteEncoder<MyrpcResponse> {
 
         if (log.isDebugEnabled()) {
             log.debug("响应【{}】已经在服务端完成编码工作", myrpcResponse.getRequestId());
-        }
-
-    }
-
-    private byte[] getBodyBytes(Object body) {
-
-        if (body == null) {
-            return null;
-        }
-
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream outputStream = new ObjectOutputStream(baos);
-            outputStream.writeObject(body);
-
-            // Todo 压缩
-
-            return baos.toByteArray();
-        } catch (IOException e) {
-            log.error("序列化时发生异常。");
-            throw new RuntimeException(e);
         }
 
     }

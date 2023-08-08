@@ -1,5 +1,8 @@
 package com.xiaoxiao;
 
+import lombok.ToString;
+
+@ToString
 public class ProtocolConfig {
     private String protocolName;
 

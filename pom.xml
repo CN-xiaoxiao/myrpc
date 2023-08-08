@@ -31,6 +31,9 @@
         <fastjson2.version>2.0.38</fastjson2.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <lombok.version>1.18.26</lombok.version>
+        <hessian.version>4.0.66</hessian.version>
+        <kryo.version>5.5.0</kryo.version>
+        <fury.version>0.1.0</fury.version>
     </properties>
 
     <dependencyManagement>
@@ -80,6 +83,27 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons-lang3.version}</version>
+            </dependency>
+
+            <!-- hessian -->
+            <dependency>
+                <groupId>com.caucho</groupId>
+                <artifactId>hessian</artifactId>
+                <version>${hessian.version}</version>
+            </dependency>
+
+            <!-- kryo -->
+            <dependency>
+                <groupId>com.esotericsoftware</groupId>
+                <artifactId>kryo</artifactId>
+                <version>${kryo.version}</version>
+            </dependency>
+
+            <!-- fury -->
+            <dependency>
+                <groupId>org.furyio</groupId>
+                <artifactId>fury-core</artifactId>
+                <version>${fury.version}</version>
             </dependency>
 
         </dependencies>

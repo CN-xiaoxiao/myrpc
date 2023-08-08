@@ -7,6 +7,7 @@ import com.xiaoxiao.discovery.Registry;
 import com.xiaoxiao.enumeration.RequestType;
 import com.xiaoxiao.exceptions.DiscoveryException;
 import com.xiaoxiao.exceptions.NetWorkException;
+import com.xiaoxiao.serialize.SerializerFactory;
 import com.xiaoxiao.transport.message.MyrpcRequest;
 import com.xiaoxiao.transport.message.RequestPayload;
 import io.netty.buffer.Unpooled;
@@ -69,7 +70,7 @@ public class RpcConsumerInvocationHandler implements InvocationHandler {
                 .requestId(MyrpcBootstrap.ID_GENERATOR.getId())
                 .compressType((byte) 1)
                 .requestType((RequestType.REQUEST.getId()))
-                .serializeType((byte) 1)
+                .serializeType(SerializerFactory.getSerializer(MyrpcBootstrap.SERIALIZE_TYPE).getCode())
                 .requestPayload(requestPayload)
                 .build();
 

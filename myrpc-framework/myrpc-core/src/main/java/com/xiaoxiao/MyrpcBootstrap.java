@@ -40,8 +40,9 @@ public class MyrpcBootstrap {
     // 全局的对外挂起的 completableFuture
     public static final Map<Long, CompletableFuture<Object>> PENDING_REQUEST = new ConcurrentHashMap<>(128);
 
-    // 维护的zookeeper实例
-//    private ZooKeeper zooKeeper;
+    public static String SERIALIZE_TYPE = "jdk";
+
+
 
     private MyrpcBootstrap() {
 
@@ -173,6 +174,21 @@ public class MyrpcBootstrap {
 
         // 配置reference
         reference.setRegistry(registry);
+
+        return this;
+    }
+
+    /**
+     * 配置序列化的方式
+     * @param serializeType
+     * @return
+     */
+    public MyrpcBootstrap serialize(String serializeType) {
+        SERIALIZE_TYPE = serializeType;
+
+        if (log.isDebugEnabled()) {
+            log.debug("配置了使用的序列化方式为【{}】", serializeType);
+        }
 
         return this;
     }

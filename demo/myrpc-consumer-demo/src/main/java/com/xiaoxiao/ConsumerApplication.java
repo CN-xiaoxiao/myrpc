@@ -18,6 +18,7 @@ public class ConsumerApplication {
         MyrpcBootstrap.getInstance()
                 .application("first-myprc-consumer")
                 .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
+                .serialize("fury")
                 .reference(reference);
 
         HelloMyrpc helloMyrpc = reference.get();

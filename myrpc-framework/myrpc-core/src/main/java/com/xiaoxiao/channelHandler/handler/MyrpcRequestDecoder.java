@@ -1,6 +1,8 @@
 package com.xiaoxiao.channelHandler.handler;
 
 import com.xiaoxiao.enumeration.RequestType;
+import com.xiaoxiao.serialize.Serializer;
+import com.xiaoxiao.serialize.SerializerFactory;
 import com.xiaoxiao.transport.message.MessageFormatConstant;
 import com.xiaoxiao.transport.message.MyrpcRequest;
 import com.xiaoxiao.transport.message.RequestPayload;
@@ -96,16 +98,12 @@ public class MyrpcRequestDecoder extends LengthFieldBasedFrameDecoder {
         // Todo 1、解压缩
 
 
-        // Todo 2、反序列化
-        try(ByteArrayInputStream bais = new ByteArrayInputStream(payload);
-            ObjectInputStream ois = new ObjectInputStream(bais)) {
+        // 2、反序列化
 
-            RequestPayload requestPayload = (RequestPayload) ois.readObject();
-            myrpcRequest.setRequestPayload(requestPayload);
+        Serializer serializer = SerializerFactory.getSerializer(serializeType).getSerializer();
+        RequestPayload requestPayload = serializer.deserialize(payload, RequestPayload.class);
 
-        } catch (IOException | ClassNotFoundException e) {
-            log.error("请求【{}】反序列化时发生异常",requestId,e);
-        }
+        myrpcRequest.setRequestPayload(requestPayload);
 
         if (log.isDebugEnabled()) {
             log.debug("请求【{}】已经完成在服务端完成报文的解码工作", myrpcRequest.getRequestId());

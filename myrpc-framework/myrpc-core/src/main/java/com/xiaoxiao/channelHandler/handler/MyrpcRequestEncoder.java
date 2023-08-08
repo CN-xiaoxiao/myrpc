@@ -1,16 +1,14 @@
 package com.xiaoxiao.channelHandler.handler;
 
+import com.xiaoxiao.MyrpcBootstrap;
+import com.xiaoxiao.serialize.Serializer;
+import com.xiaoxiao.serialize.SerializerFactory;
 import com.xiaoxiao.transport.message.MessageFormatConstant;
 import com.xiaoxiao.transport.message.MyrpcRequest;
-import com.xiaoxiao.transport.message.RequestPayload;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 /**
  * 协议编码器
@@ -40,8 +38,11 @@ public class MyrpcRequestEncoder extends MessageToByteEncoder<MyrpcRequest> {
 
         byteBuf.writeLong(myrpcRequest.getRequestId());
 
+        // 序列化
+        Serializer serializer = SerializerFactory.getSerializer(MyrpcBootstrap.SERIALIZE_TYPE).getSerializer();
 
-        byte[] body = getBodyBytes(myrpcRequest.getRequestPayload());
+        byte[] body = serializer.serialize(myrpcRequest.getRequestPayload());
+
         if (body!=null) {
             byteBuf.writeBytes(body);
         }
@@ -62,24 +63,4 @@ public class MyrpcRequestEncoder extends MessageToByteEncoder<MyrpcRequest> {
         }
     }
 
-    private byte[] getBodyBytes(RequestPayload requestPayload) {
-
-        if (requestPayload == null) {
-            return null;
-        }
-
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream outputStream = new ObjectOutputStream(baos);
-            outputStream.writeObject(requestPayload);
-
-            // Todo 压缩
-
-            return baos.toByteArray();
-        } catch (IOException e) {
-            log.error("序列化时发生异常。");
-            throw new RuntimeException(e);
-        }
-
-    }
 }
