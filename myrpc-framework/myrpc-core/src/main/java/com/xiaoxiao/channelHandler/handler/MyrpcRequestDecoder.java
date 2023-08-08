@@ -17,8 +17,8 @@ import java.io.ObjectInputStream;
  * 解码器
  */
 @Slf4j
-public class MyrpcMessageDecoder extends LengthFieldBasedFrameDecoder {
-    public MyrpcMessageDecoder() {
+public class MyrpcRequestDecoder extends LengthFieldBasedFrameDecoder {
+    public MyrpcRequestDecoder() {
         super(
                 MessageFormatConstant.MAX_FRAME_LENGTH,
                 MessageFormatConstant.MAGIC.length + MessageFormatConstant.VERSION_LENGTH + MessageFormatConstant.HEADER_FIELD_LENGTH,
@@ -80,6 +80,7 @@ public class MyrpcMessageDecoder extends LengthFieldBasedFrameDecoder {
         myrpcRequest.setRequestType(requestType);
         myrpcRequest.setCompressType(compressType);
         myrpcRequest.setSerializeType(serializeType);
+        myrpcRequest.setRequestId(requestId);
 
         // 判断是否时心跳检测，如果是直接返回
         if (requestType == RequestType.heart_BEAT.getId()) {
@@ -104,6 +105,10 @@ public class MyrpcMessageDecoder extends LengthFieldBasedFrameDecoder {
 
         } catch (IOException | ClassNotFoundException e) {
             log.error("请求【{}】反序列化时发生异常",requestId,e);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("请求【{}】已经完成在服务端完成报文的解码工作", myrpcRequest.getRequestId());
         }
 
         return myrpcRequest;

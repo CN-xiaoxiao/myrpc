@@ -2,7 +2,9 @@ package com.xiaoxiao.channelHandler.handler;
 
 import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.ServiceConfig;
+import com.xiaoxiao.enumeration.ResponseCode;
 import com.xiaoxiao.transport.message.MyrpcRequest;
+import com.xiaoxiao.transport.message.MyrpcResponse;
 import com.xiaoxiao.transport.message.RequestPayload;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -19,12 +21,22 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<MyrpcRequest>
         RequestPayload requestPayload = myrpcRequest.getRequestPayload();
 
         // 2、根据负载内容进行方法调用
-        Object object = callTargetMethod(requestPayload);
+        Object result = callTargetMethod(requestPayload);
 
-        // Todo 3、封装响应
+        if (log.isDebugEnabled()) {
+            log.debug("请求【{}】已经在服务端完成方法调用", myrpcRequest.getRequestId());
+        }
+
+        // 3、封装响应
+        MyrpcResponse myrpcResponse = new MyrpcResponse();
+        myrpcResponse.setCode(ResponseCode.SUCCESS.getCode());
+        myrpcResponse.setRequestId(myrpcRequest.getRequestId());
+        myrpcResponse.setCompressType(myrpcRequest.getCompressType());
+        myrpcResponse.setSerializeType(myrpcRequest.getSerializeType());
+        myrpcResponse.setBody(result);
 
         // 4、写出相应
-        channelHandlerContext.channel().writeAndFlush(null);
+        channelHandlerContext.channel().writeAndFlush(myrpcResponse);
     }
 
     private Object callTargetMethod(RequestPayload requestPayload) {

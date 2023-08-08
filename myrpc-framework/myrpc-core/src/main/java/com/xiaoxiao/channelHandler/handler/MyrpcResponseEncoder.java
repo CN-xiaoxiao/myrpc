@@ -1,8 +1,8 @@
 package com.xiaoxiao.channelHandler.handler;
 
-import com.xiaoxiao.enumeration.RequestType;
 import com.xiaoxiao.transport.message.MessageFormatConstant;
 import com.xiaoxiao.transport.message.MyrpcRequest;
+import com.xiaoxiao.transport.message.MyrpcResponse;
 import com.xiaoxiao.transport.message.RequestPayload;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.nio.charset.StandardCharsets;
 
 /**
  * 协议编码器
@@ -20,30 +19,30 @@ import java.nio.charset.StandardCharsets;
  * 1B version（版本）  --- 1
  * 2B header length（首部长度）
  * 4B full length（报文总长度）
- * 1B request type
+ * 1B code
  * 1B serialize type
  * 1B compress type
  * 8B request id
  *
  */
 @Slf4j
-public class MyrpcMessageEncoder extends MessageToByteEncoder<MyrpcRequest> {
+public class MyrpcResponseEncoder extends MessageToByteEncoder<MyrpcResponse> {
     @Override
-    protected void encode(ChannelHandlerContext channelHandlerContext, MyrpcRequest myrpcRequest, ByteBuf byteBuf) throws Exception {
+    protected void encode(ChannelHandlerContext channelHandlerContext, MyrpcResponse myrpcResponse, ByteBuf byteBuf) throws Exception {
 
         byteBuf.writeBytes(MessageFormatConstant.MAGIC);
         byteBuf.writeByte(MessageFormatConstant.VERSION);
         byteBuf.writeShort(MessageFormatConstant.HEADER_LENGTH);
         byteBuf.writerIndex(byteBuf.writerIndex() + MessageFormatConstant.FULL_FIELD_LENGTH);
 
-        byteBuf.writeByte(myrpcRequest.getRequestType());
-        byteBuf.writeByte(myrpcRequest.getSerializeType());
-        byteBuf.writeByte(myrpcRequest.getCompressType());
+        byteBuf.writeByte(myrpcResponse.getCode());
+        byteBuf.writeByte(myrpcResponse.getSerializeType());
+        byteBuf.writeByte(myrpcResponse.getCompressType());
 
-        byteBuf.writeLong(myrpcRequest.getRequestId());
+        byteBuf.writeLong(myrpcResponse.getRequestId());
 
 
-        byte[] body = getBodyBytes(myrpcRequest.getRequestPayload());
+        byte[] body = getBodyBytes(myrpcResponse.getBody());
         if (body!=null) {
             byteBuf.writeBytes(body);
         }
@@ -58,18 +57,23 @@ public class MyrpcMessageEncoder extends MessageToByteEncoder<MyrpcRequest> {
 
         // 写指针归位
         byteBuf.writerIndex(writerIndex);
+
+        if (log.isDebugEnabled()) {
+            log.debug("响应【{}】已经在服务端完成编码工作", myrpcResponse.getRequestId());
+        }
+
     }
 
-    private byte[] getBodyBytes(RequestPayload requestPayload) {
+    private byte[] getBodyBytes(Object body) {
 
-        if (requestPayload == null) {
+        if (body == null) {
             return null;
         }
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream outputStream = new ObjectOutputStream(baos);
-            outputStream.writeObject(requestPayload);
+            outputStream.writeObject(body);
 
             // Todo 压缩
 

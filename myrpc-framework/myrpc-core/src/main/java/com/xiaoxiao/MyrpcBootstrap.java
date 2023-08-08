@@ -1,15 +1,13 @@
 package com.xiaoxiao;
 
 import com.xiaoxiao.channelHandler.handler.MethodCallHandler;
-import com.xiaoxiao.channelHandler.handler.MyrpcMessageDecoder;
+import com.xiaoxiao.channelHandler.handler.MyrpcRequestDecoder;
+import com.xiaoxiao.channelHandler.handler.MyrpcResponseEncoder;
 import com.xiaoxiao.discovery.Registry;
 import com.xiaoxiao.discovery.RegistryConfig;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.sctp.nio.NioSctpServerChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
@@ -17,8 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 
 
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -142,8 +138,9 @@ public class MyrpcBootstrap {
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             socketChannel.pipeline()
                                     .addLast(new LoggingHandler())
-                                    .addLast(new MyrpcMessageDecoder())
-                                    .addLast(new MethodCallHandler());
+                                    .addLast(new MyrpcRequestDecoder())
+                                    .addLast(new MethodCallHandler())
+                                    .addLast(new MyrpcResponseEncoder());
                         }
                     });
             // 4、绑定端口

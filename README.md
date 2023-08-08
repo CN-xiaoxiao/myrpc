@@ -3,16 +3,16 @@
 ### 基本调用过程：
 1、服务调用方<br />
 发送报文 writeAndFlush(object)<br />
-pipeline生效，报文开始出栈<br />
+pipeline生效，报文开始出站<br />
 ---> 第一个处理器 （in/out）log <br />
 ---> 第二个处理器 编码器（out）（转化 object -> msg（请求报文）、序列化、压缩)<br />
 
 
 2、服务提供方<br />
 通过netty接收报文<br />
-pipeline生效，报文开始出栈<br />
+pipeline生效，报文开始出站<br />
 发送报文 writeAndFlush(object)<br />
-pipeline生效报文开始出栈<br />
+pipeline生效报文开始出站<br />
 ---> 第一个处理器 （in/out）log <br />
 ---> 第二个处理器 解码器（in）（解压缩）、反序列化、解析报文<br />
 ---> 第三个处理器 （in）处理请求，执行方法调用，得到结果<br />
@@ -21,16 +21,16 @@ pipeline生效报文开始出栈<br />
 
 4、服务提供方<br />
 发送报文 writeAndFlush(object)<br />
-pipeline生效，报文开始出栈<br />
+pipeline生效，报文开始出站<br />
 ---> 第一个处理器（out）（转化 object -> msg（响应报文）)<br />
 ---> 第二个处理器（out）（序列化）<br />
 ---> 第三个处理器（out）（压缩）<br />
 
 5、服务调用方<br />
 通过netty接收响应报文<br />
-pipeline生效，报文开始出栈<br />
+pipeline生效，报文开始出站<br />
 发送报文 writeAndFlush(object)<br />
-pipeline生效报文开始出栈<br />
+pipeline生效报文开始出站<br />
 ---> 第一个处理器（in）（解压缩）<br />
 ---> 第二个处理器（in）（反序列化）<br />
 ---> 第三个处理器（in）（解析报文)<br />
