@@ -21,6 +21,8 @@ public class MyrpcRequest {
     private byte compressType;
     // 序列化方式
     private byte serializeType;
+    // 时间戳
+    private long timeStamp;
 
     // 具体的消息体
     private RequestPayload requestPayload;

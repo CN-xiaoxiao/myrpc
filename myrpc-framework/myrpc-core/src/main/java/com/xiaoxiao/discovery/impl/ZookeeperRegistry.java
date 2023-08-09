@@ -1,6 +1,7 @@
 package com.xiaoxiao.discovery.impl;
 
 import com.xiaoxiao.Constant;
+import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.ServiceConfig;
 import com.xiaoxiao.discovery.AbstractRegistry;
 import com.xiaoxiao.exceptions.DiscoveryException;
@@ -44,7 +45,7 @@ public class ZookeeperRegistry extends AbstractRegistry {
 
         // 创建本机的临时节点
         // Todo 端口处理
-        String node = parentNode + "/" + NetUtils.getIp() + ":" + 8088;
+        String node = parentNode + "/" + NetUtils.getIp() + ":" + MyrpcBootstrap.PORT;
         if (!ZookeeperUtils.exists(zooKeeper, node, null)) {
             ZookeeperNode zookeeperNode = new ZookeeperNode(node, null);
             ZookeeperUtils.createNode(zooKeeper, zookeeperNode, null, CreateMode.EPHEMERAL);
@@ -57,12 +58,12 @@ public class ZookeeperRegistry extends AbstractRegistry {
     }
 
     /**
-     *
+     * 从注册中心拉取服务列表
      * @param serviceName 服务的名称
-     * @return
+     * @return 服务列表
      */
     @Override
-    public InetSocketAddress lookup(String serviceName) {
+    public List<InetSocketAddress> lookup(String serviceName) {
         // 1、找到服务对应的节点
         String serviceNode = Constant.BASE_PROVIDERS_PATH + "/" + serviceName;
 
@@ -80,6 +81,6 @@ public class ZookeeperRegistry extends AbstractRegistry {
             throw new DiscoveryException("未发现任何可用的服务主机");
         }
 
-        return inetSocketAddresses.get(0);
+        return inetSocketAddresses;
     }
 }

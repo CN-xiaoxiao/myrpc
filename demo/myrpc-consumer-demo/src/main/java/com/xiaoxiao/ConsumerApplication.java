@@ -3,6 +3,7 @@ package com.xiaoxiao;
 import com.xiaoxiao.discovery.RegistryConfig;
 import lombok.extern.slf4j.Slf4j;
 
+
 @Slf4j
 public class ConsumerApplication {
     public static void main(String[] args) {
@@ -23,8 +24,9 @@ public class ConsumerApplication {
                 .reference(reference);
 
         HelloMyrpc helloMyrpc = reference.get();
-        String sayHi = helloMyrpc.sayHi("Hello");
-        log.info("sayHi-->{}", sayHi);
-
+        for (int i = 0; i < 10; i++) {
+            String sayHi = helloMyrpc.sayHi("Hello");
+            log.info("sayHi-->{}", sayHi);
+        }
     }
 }

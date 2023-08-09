@@ -1,8 +1,8 @@
-package com.xiaoxiao.channelHandler;
+package com.xiaoxiao.channelhandler;
 
-import com.xiaoxiao.channelHandler.handler.MySimpleChannelInboundHandler;
-import com.xiaoxiao.channelHandler.handler.MyrpcRequestEncoder;
-import com.xiaoxiao.channelHandler.handler.MyrpcResponseDecoder;
+import com.xiaoxiao.channelhandler.handler.MySimpleChannelInboundHandler;
+import com.xiaoxiao.channelhandler.handler.MyrpcRequestEncoder;
+import com.xiaoxiao.channelhandler.handler.MyrpcResponseDecoder;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.logging.LogLevel;

@@ -19,6 +19,8 @@ public class MyrpcResponse {
     private byte compressType;
     // 序列化方式
     private byte serializeType;
+    // 时间戳
+    private long timeStamp;
     // 响应码 200 成功；500 异常
     private byte code;
 

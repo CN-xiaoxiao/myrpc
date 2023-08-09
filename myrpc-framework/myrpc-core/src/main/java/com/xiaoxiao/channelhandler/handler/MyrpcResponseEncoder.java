@@ -1,21 +1,15 @@
-package com.xiaoxiao.channelHandler.handler;
+package com.xiaoxiao.channelhandler.handler;
 
 import com.xiaoxiao.compress.Compressor;
 import com.xiaoxiao.compress.CompressorFactory;
 import com.xiaoxiao.serialize.Serializer;
 import com.xiaoxiao.serialize.SerializerFactory;
 import com.xiaoxiao.transport.message.MessageFormatConstant;
-import com.xiaoxiao.transport.message.MyrpcRequest;
 import com.xiaoxiao.transport.message.MyrpcResponse;
-import com.xiaoxiao.transport.message.RequestPayload;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 /**
  * 协议编码器
@@ -44,19 +38,25 @@ public class MyrpcResponseEncoder extends MessageToByteEncoder<MyrpcResponse> {
         byteBuf.writeByte(myrpcResponse.getCompressType());
 
         byteBuf.writeLong(myrpcResponse.getRequestId());
+        byteBuf.writeLong(myrpcResponse.getTimeStamp());
 
-        // 对响应进行序列化
-        Serializer serializer = SerializerFactory
-                .getSerializer(myrpcResponse.getSerializeType())
-                .getSerializer();
-        byte[] body = serializer.serialize(myrpcResponse.getBody());
+        byte[] body = null;
 
-        // 压缩
-        Compressor compressor = CompressorFactory
-                .getCompressor(myrpcResponse.getCompressType())
-                .getCompressor();
+        if (myrpcResponse.getBody() != null) {
+            // 对响应进行序列化
+            Serializer serializer = SerializerFactory
+                    .getSerializer(myrpcResponse.getSerializeType())
+                    .getSerializer();
+            body = serializer.serialize(myrpcResponse.getBody());
 
-        body = compressor.compress(body);
+            // 压缩
+            Compressor compressor = CompressorFactory
+                    .getCompressor(myrpcResponse.getCompressType())
+                    .getCompressor();
+
+            body = compressor.compress(body);
+        }
+
 
         if (body!=null) {
             byteBuf.writeBytes(body);

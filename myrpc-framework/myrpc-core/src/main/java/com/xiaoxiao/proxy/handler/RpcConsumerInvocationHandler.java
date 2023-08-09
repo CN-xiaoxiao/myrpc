@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -47,17 +48,7 @@ public class RpcConsumerInvocationHandler implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 
-        // 1、发现服务，从注册中心寻找一个可用的服务
-        InetSocketAddress address = registry.lookup(interfaceRef.getName());
-
-        if (log.isDebugEnabled()) {
-            log.debug("服务调用方，发现了服务【{}】的可用主机【{}】", interfaceRef.getName(), address);
-        }
-
-        // 2、使用netty连接服务器，发送调用的服务的名字+方法名字+参数列表，得到结果
-        Channel channel = getAvailableChannel(address);
-
-        // 封装报文
+        // 1、封装报文
         RequestPayload requestPayload = RequestPayload.builder()
                 .interfaceName(interfaceRef.getName())
                 .methodName(method.getName())
@@ -72,13 +63,28 @@ public class RpcConsumerInvocationHandler implements InvocationHandler {
                 .compressType(CompressorFactory.getCompressor(MyrpcBootstrap.COMPRESS_TYPE).getCode())
                 .requestType((RequestType.REQUEST.getId()))
                 .serializeType(SerializerFactory.getSerializer(MyrpcBootstrap.SERIALIZE_TYPE).getCode())
+                .timeStamp(new Date().getTime())
                 .requestPayload(requestPayload)
                 .build();
 
-        // 异步策略读取返回结果
+        // 将请求存入本地线程
+        MyrpcBootstrap.REQUEST_THREAD_LOCAL.set(myrpcRequest);
+
+        // 2、发现服务，从注册中心拉取服务列表，并通过客户端负载均衡寻找一个可用的服务
+        InetSocketAddress address = MyrpcBootstrap.LOAD_BALANCER.selectServiceAddress(interfaceRef.getName());
+
+        if (log.isDebugEnabled()) {
+            log.debug("服务调用方，发现了服务【{}】的可用主机【{}】", interfaceRef.getName(), address);
+        }
+
+        // 使用netty连接服务器，发送调用的服务的名字+方法名字+参数列表，得到结果
+        // 3、获取一个可用的channel
+        Channel channel = getAvailableChannel(address);
+
+        // 4、异步策略读取返回结果
         CompletableFuture<Object> completableFuture = new CompletableFuture<>();
         // 将completableFuture 暴露出去
-        MyrpcBootstrap.PENDING_REQUEST.put(1L,completableFuture);
+        MyrpcBootstrap.PENDING_REQUEST.put(myrpcRequest.getRequestId(), completableFuture);
 
         channel.writeAndFlush(myrpcRequest)
                 .addListener( (ChannelFutureListener) promise -> {
@@ -86,6 +92,9 @@ public class RpcConsumerInvocationHandler implements InvocationHandler {
                         completableFuture.completeExceptionally(promise.cause());
                     }
                 });
+
+        // 清理threadLocal
+        MyrpcBootstrap.REQUEST_THREAD_LOCAL.remove();
 
         // 5、获得响应的结果
         return completableFuture.get(10, TimeUnit.SECONDS);

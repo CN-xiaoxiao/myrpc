@@ -3,6 +3,7 @@ package com.xiaoxiao.discovery;
 import com.xiaoxiao.ServiceConfig;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
 /**
  * 注册中心
@@ -20,5 +21,5 @@ public interface Registry {
      * @param name 服务的名称
      * @return 服务的地址
      */
-    InetSocketAddress lookup(String serviceName);
+    List<InetSocketAddress> lookup(String serviceName);
 }

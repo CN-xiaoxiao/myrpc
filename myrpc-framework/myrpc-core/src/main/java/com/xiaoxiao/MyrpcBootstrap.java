@@ -1,10 +1,14 @@
 package com.xiaoxiao;
 
-import com.xiaoxiao.channelHandler.handler.MethodCallHandler;
-import com.xiaoxiao.channelHandler.handler.MyrpcRequestDecoder;
-import com.xiaoxiao.channelHandler.handler.MyrpcResponseEncoder;
+import com.xiaoxiao.channelhandler.handler.MethodCallHandler;
+import com.xiaoxiao.channelhandler.handler.MyrpcRequestDecoder;
+import com.xiaoxiao.channelhandler.handler.MyrpcResponseEncoder;
+import com.xiaoxiao.code.HeartbeatDetector;
 import com.xiaoxiao.discovery.Registry;
 import com.xiaoxiao.discovery.RegistryConfig;
+import com.xiaoxiao.loadbalance.LoadBalancer;
+import com.xiaoxiao.loadbalance.impl.MinimumResponseTimeLoadBalancer;
+import com.xiaoxiao.transport.message.MyrpcRequest;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -17,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,25 +29,30 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MyrpcBootstrap {
 
 
+    public static final int PORT = 8090;
     private static final MyrpcBootstrap myrpcBootstrap = new MyrpcBootstrap();
 
     // 定义相关的一些基础配置
     private String appName = "default";
     private RegistryConfig registryConfig;
     private ProtocolConfig protocolConfig;
-    private int port = 8088;
+//    private int port = 8090;
     public static final IdGenerator ID_GENERATOR = new IdGenerator(1,2);
     // 注册中心
     private Registry registry;
+    public static LoadBalancer LOAD_BALANCER;
     // 维护已经发布且暴露的服务列表 key-> interface的全限定名，value-> ServiceConfig
     public static final Map<String, ServiceConfig<?>> SERVICE_LIST = new ConcurrentHashMap<>(16);
     // 连接的缓存
     public static final Map<InetSocketAddress, Channel> CHANNEL_CACHE = new ConcurrentHashMap<>(16);
+    public static final TreeMap<Long, Channel> ANSWERING_TIME_CHANNEL_CACHE = new TreeMap<>();
     // 全局的对外挂起的 completableFuture
     public static final Map<Long, CompletableFuture<Object>> PENDING_REQUEST = new ConcurrentHashMap<>(128);
 
     public static String SERIALIZE_TYPE = "jdk";
     public static String COMPRESS_TYPE = "gzip";
+
+    public static final ThreadLocal<MyrpcRequest> REQUEST_THREAD_LOCAL = new ThreadLocal<>();
 
 
 
@@ -76,6 +86,10 @@ public class MyrpcBootstrap {
 
         // 使用 registryConfig 获取注册中心
         this.registry = registryConfig.getRegistry();
+
+        // Todo 需要修改
+        MyrpcBootstrap.LOAD_BALANCER = new MinimumResponseTimeLoadBalancer();
+
         return this;
     }
 
@@ -148,7 +162,7 @@ public class MyrpcBootstrap {
                         }
                     });
             // 4、绑定端口
-            ChannelFuture channelFuture = serverBootstrap.bind(port).sync();
+            ChannelFuture channelFuture = serverBootstrap.bind(PORT).sync();
 
             channelFuture.channel().closeFuture().sync();
 
@@ -173,6 +187,12 @@ public class MyrpcBootstrap {
      * @param reference
      */
     public MyrpcBootstrap reference(ReferenceConfig<?> reference) {
+
+        // 开启对此服务的心跳检测
+        if (log.isDebugEnabled()) {
+            log.debug("开始对服务【{}】的心跳检测。", reference.getInterface().getName());
+        }
+        HeartbeatDetector.detectHeartbeat(reference.getInterface().getName());
 
         // 配置reference
         reference.setRegistry(registry);
@@ -203,5 +223,9 @@ public class MyrpcBootstrap {
         }
 
         return this;
+    }
+
+    public Registry getRegistry() {
+        return registry;
     }
 }

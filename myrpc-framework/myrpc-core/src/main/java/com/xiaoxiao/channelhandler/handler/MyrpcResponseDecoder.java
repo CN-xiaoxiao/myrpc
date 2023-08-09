@@ -1,22 +1,15 @@
-package com.xiaoxiao.channelHandler.handler;
+package com.xiaoxiao.channelhandler.handler;
 
 import com.xiaoxiao.compress.Compressor;
 import com.xiaoxiao.compress.CompressorFactory;
-import com.xiaoxiao.enumeration.RequestType;
 import com.xiaoxiao.serialize.Serializer;
 import com.xiaoxiao.serialize.SerializerFactory;
 import com.xiaoxiao.transport.message.MessageFormatConstant;
-import com.xiaoxiao.transport.message.MyrpcRequest;
 import com.xiaoxiao.transport.message.MyrpcResponse;
-import com.xiaoxiao.transport.message.RequestPayload;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 
 /**
  * 解码器
@@ -81,11 +74,15 @@ public class MyrpcResponseDecoder extends LengthFieldBasedFrameDecoder {
         // 8、请求id
         long requestId = byteBuf.readLong();
 
+        // 9、时间戳
+        long timeStamp = byteBuf.readLong();
+
         MyrpcResponse myrpcResponse = new MyrpcResponse();
         myrpcResponse.setCode(responseCode);
         myrpcResponse.setCompressType(compressType);
         myrpcResponse.setSerializeType(serializeType);
         myrpcResponse.setRequestId(requestId);
+        myrpcResponse.setTimeStamp(timeStamp);
 
         // Todo 判断是否时心跳检测，如果是直接返回
 //        if (requestType == RequestType.heart_BEAT.getId()) {
@@ -98,20 +95,22 @@ public class MyrpcResponseDecoder extends LengthFieldBasedFrameDecoder {
 
         byteBuf.readBytes(payload);
 
-        // 1、解压缩
-        Compressor compressor = CompressorFactory
-                .getCompressor(compressType)
-                .getCompressor();
+        if (payload.length > 0) {
+            // 1、解压缩
+            Compressor compressor = CompressorFactory
+                    .getCompressor(compressType)
+                    .getCompressor();
 
-        payload = compressor.decompress(payload);
+            payload = compressor.decompress(payload);
 
-        // 2、反序列化
-        Serializer serializer = SerializerFactory
-                .getSerializer(serializeType)
-                .getSerializer();
+            // 2、反序列化
+            Serializer serializer = SerializerFactory
+                    .getSerializer(serializeType)
+                    .getSerializer();
 
-        Object body = serializer.deserialize(payload, Object.class);
-        myrpcResponse.setBody(body);
+            Object body = serializer.deserialize(payload, Object.class);
+            myrpcResponse.setBody(body);
+        }
 
         if (log.isDebugEnabled()) {
             log.debug("响应【{}】已经在服务调用端完成解码工作", myrpcResponse.getRequestId());

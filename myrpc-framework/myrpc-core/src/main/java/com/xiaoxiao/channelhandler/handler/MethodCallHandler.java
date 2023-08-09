@@ -1,7 +1,8 @@
-package com.xiaoxiao.channelHandler.handler;
+package com.xiaoxiao.channelhandler.handler;
 
 import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.ServiceConfig;
+import com.xiaoxiao.enumeration.RequestType;
 import com.xiaoxiao.enumeration.ResponseCode;
 import com.xiaoxiao.transport.message.MyrpcRequest;
 import com.xiaoxiao.transport.message.MyrpcResponse;
@@ -21,7 +22,10 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<MyrpcRequest>
         RequestPayload requestPayload = myrpcRequest.getRequestPayload();
 
         // 2、根据负载内容进行方法调用
-        Object result = callTargetMethod(requestPayload);
+        Object result = null;
+        if (!(myrpcRequest.getRequestType() == RequestType.heart_BEAT.getId())) {
+            result = callTargetMethod(requestPayload);
+        }
 
         if (log.isDebugEnabled()) {
             log.debug("请求【{}】已经在服务端完成方法调用", myrpcRequest.getRequestId());
