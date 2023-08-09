@@ -1,6 +1,8 @@
 package com.xiaoxiao.channelHandler.handler;
 
 import com.xiaoxiao.MyrpcBootstrap;
+import com.xiaoxiao.compress.Compressor;
+import com.xiaoxiao.compress.CompressorFactory;
 import com.xiaoxiao.serialize.Serializer;
 import com.xiaoxiao.serialize.SerializerFactory;
 import com.xiaoxiao.transport.message.MessageFormatConstant;
@@ -39,9 +41,14 @@ public class MyrpcRequestEncoder extends MessageToByteEncoder<MyrpcRequest> {
         byteBuf.writeLong(myrpcRequest.getRequestId());
 
         // 序列化
-        Serializer serializer = SerializerFactory.getSerializer(MyrpcBootstrap.SERIALIZE_TYPE).getSerializer();
+        Serializer serializer = SerializerFactory.getSerializer(myrpcRequest.getSerializeType()).getSerializer();
 
         byte[] body = serializer.serialize(myrpcRequest.getRequestPayload());
+
+        // 压缩
+        Compressor compressor = CompressorFactory.getCompressor(myrpcRequest.getCompressType()).getCompressor();
+        body = compressor.compress(body);
+
 
         if (body!=null) {
             byteBuf.writeBytes(body);

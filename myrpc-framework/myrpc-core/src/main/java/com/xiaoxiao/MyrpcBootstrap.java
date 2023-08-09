@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class MyrpcBootstrap {
 
+
     private static final MyrpcBootstrap myrpcBootstrap = new MyrpcBootstrap();
 
     // 定义相关的一些基础配置
@@ -41,6 +42,7 @@ public class MyrpcBootstrap {
     public static final Map<Long, CompletableFuture<Object>> PENDING_REQUEST = new ConcurrentHashMap<>(128);
 
     public static String SERIALIZE_TYPE = "jdk";
+    public static String COMPRESS_TYPE = "gzip";
 
 
 
@@ -188,6 +190,16 @@ public class MyrpcBootstrap {
 
         if (log.isDebugEnabled()) {
             log.debug("配置了使用的序列化方式为【{}】", serializeType);
+        }
+
+        return this;
+    }
+
+    public MyrpcBootstrap compress(String compressType) {
+        COMPRESS_TYPE = compressType;
+
+        if (log.isDebugEnabled()) {
+            log.debug("配置了使用的解压缩方式为【{}】", compressType);
         }
 
         return this;

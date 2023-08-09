@@ -1,5 +1,7 @@
 package com.xiaoxiao.channelHandler.handler;
 
+import com.xiaoxiao.compress.Compressor;
+import com.xiaoxiao.compress.CompressorFactory;
 import com.xiaoxiao.enumeration.RequestType;
 import com.xiaoxiao.serialize.Serializer;
 import com.xiaoxiao.serialize.SerializerFactory;
@@ -95,7 +97,9 @@ public class MyrpcRequestDecoder extends LengthFieldBasedFrameDecoder {
 
         byteBuf.readBytes(payload);
 
-        // Todo 1、解压缩
+        // 1、解压缩
+        Compressor compressor = CompressorFactory.getCompressor(compressType).getCompressor();
+        payload = compressor.decompress(payload);
 
 
         // 2、反序列化

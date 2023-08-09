@@ -3,6 +3,7 @@ package com.xiaoxiao.proxy.handler;
 import com.xiaoxiao.IdGenerator;
 import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.NettyBootstrapInitializer;
+import com.xiaoxiao.compress.CompressorFactory;
 import com.xiaoxiao.discovery.Registry;
 import com.xiaoxiao.enumeration.RequestType;
 import com.xiaoxiao.exceptions.DiscoveryException;
@@ -65,10 +66,10 @@ public class RpcConsumerInvocationHandler implements InvocationHandler {
                 .returnType(method.getReturnType())
                 .build();
 
-        // Todo 对各种请求id和请求类型进行处理
+        // 对各种请求id和请求类型进行处理
         MyrpcRequest myrpcRequest = MyrpcRequest.builder()
                 .requestId(MyrpcBootstrap.ID_GENERATOR.getId())
-                .compressType((byte) 1)
+                .compressType(CompressorFactory.getCompressor(MyrpcBootstrap.COMPRESS_TYPE).getCode())
                 .requestType((RequestType.REQUEST.getId()))
                 .serializeType(SerializerFactory.getSerializer(MyrpcBootstrap.SERIALIZE_TYPE).getCode())
                 .requestPayload(requestPayload)

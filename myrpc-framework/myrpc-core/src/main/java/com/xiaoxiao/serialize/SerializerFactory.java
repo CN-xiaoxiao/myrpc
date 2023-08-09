@@ -1,9 +1,11 @@
 package com.xiaoxiao.serialize;
 
 import com.xiaoxiao.serialize.impl.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class SerializerFactory {
     private static final ConcurrentHashMap<String, SerializerWrapper> SERIALIZER_CACHE = new ConcurrentHashMap<>(8);
     private static final ConcurrentHashMap<Byte, SerializerWrapper> SERIALIZER_CACHE_CODE = new ConcurrentHashMap<>(8);
@@ -30,12 +32,29 @@ public class SerializerFactory {
 
     public static SerializerWrapper getSerializer(String serializerType) {
 
-        return SERIALIZER_CACHE.get(serializerType);
+        SerializerWrapper serializerWrapper = SERIALIZER_CACHE.get(serializerType);
+
+        if (serializerWrapper == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("未找到您配置的【{}】序列化方式，已使用默认方式【{}】", serializerType, "jdk");
+            }
+            return SERIALIZER_CACHE.get("jdk");
+        }
+
+        return serializerWrapper;
     }
 
     public static SerializerWrapper getSerializer(byte serializerCode) {
+        SerializerWrapper serializerWrapper = SERIALIZER_CACHE_CODE.get(serializerCode);
 
-        return SERIALIZER_CACHE_CODE.get(serializerCode);
+        if (serializerWrapper == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("未找到您配置的【{}】序列化方式，已使用默认方式【{}】", serializerCode, "1");
+            }
+            return SERIALIZER_CACHE_CODE.get((byte) 1);
+        }
+
+        return serializerWrapper;
     }
 
 
