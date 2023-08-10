@@ -5,19 +5,16 @@ import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.ServiceConfig;
 import com.xiaoxiao.discovery.AbstractRegistry;
 import com.xiaoxiao.exceptions.DiscoveryException;
-import com.xiaoxiao.exceptions.NetWorkException;
 import com.xiaoxiao.utils.NetUtils;
 import com.xiaoxiao.utils.zookeeper.ZookeeperNode;
 import com.xiaoxiao.utils.zookeeper.ZookeeperUtils;
+import com.xiaoxiao.watch.UpAndDownWatcher;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooKeeper;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class ZookeeperRegistry extends AbstractRegistry {
@@ -68,7 +65,7 @@ public class ZookeeperRegistry extends AbstractRegistry {
         String serviceNode = Constant.BASE_PROVIDERS_PATH + "/" + serviceName;
 
         // 2、从zookeeper中获取其子节点, 192.168.0.1:2151
-        List<String> children = ZookeeperUtils.getChildren(zooKeeper, serviceNode, null);
+        List<String> children = ZookeeperUtils.getChildren(zooKeeper, serviceNode, new UpAndDownWatcher());
 
         List<InetSocketAddress> inetSocketAddresses = children.stream().map(ipString -> {
             String[] ipAndPort = ipString.split(":");

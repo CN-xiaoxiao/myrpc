@@ -1,17 +1,12 @@
 package com.xiaoxiao.loadbalance.impl;
 
-import com.xiaoxiao.MyrpcBootstrap;
-import com.xiaoxiao.discovery.Registry;
 import com.xiaoxiao.exceptions.LoadBalancerException;
 import com.xiaoxiao.loadbalance.AbstractLoadBalancer;
-import com.xiaoxiao.loadbalance.LoadBalancer;
 import com.xiaoxiao.loadbalance.Selector;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -52,15 +47,9 @@ public class RoundRobinLoadBalancer extends AbstractLoadBalancer {
                 index.incrementAndGet();
             }
 
-
-
             return address;
         }
 
-        @Override
-        public void reBalance() {
-
-        }
     }
 
 }

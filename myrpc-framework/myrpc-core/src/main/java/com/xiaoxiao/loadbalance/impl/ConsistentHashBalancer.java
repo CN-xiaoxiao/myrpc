@@ -1,7 +1,6 @@
 package com.xiaoxiao.loadbalance.impl;
 
 import com.xiaoxiao.MyrpcBootstrap;
-import com.xiaoxiao.exceptions.LoadBalancerException;
 import com.xiaoxiao.loadbalance.AbstractLoadBalancer;
 import com.xiaoxiao.loadbalance.Selector;
 import com.xiaoxiao.transport.message.MyrpcRequest;
@@ -13,7 +12,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 轮询的负载均衡
@@ -67,10 +65,6 @@ public class ConsistentHashBalancer extends AbstractLoadBalancer {
             return circle.get(hash);
         }
 
-        @Override
-        public void reBalance() {
-
-        }
 
         /**
          * 将每个节点挂载到hash环上

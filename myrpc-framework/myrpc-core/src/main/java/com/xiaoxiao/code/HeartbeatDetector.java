@@ -12,12 +12,11 @@ import io.netty.channel.ChannelFutureListener;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 public class HeartbeatDetector {
@@ -64,43 +63,65 @@ public class HeartbeatDetector {
             Map<InetSocketAddress, Channel> channelCache = MyrpcBootstrap.CHANNEL_CACHE;
 
             for (Map.Entry<InetSocketAddress, Channel> entry : channelCache.entrySet()) {
-                Channel channel = entry.getValue();
 
-                long start = System.currentTimeMillis();
+                int tryTimes = 3;
 
-                // 构建一个心跳请求
-                MyrpcRequest myrpcRequest = MyrpcRequest.builder()
-                        .requestId(MyrpcBootstrap.ID_GENERATOR.getId())
-                        .compressType(CompressorFactory.getCompressor(MyrpcBootstrap.COMPRESS_TYPE).getCode())
-                        .requestType((RequestType.heart_BEAT.getId()))
-                        .serializeType(SerializerFactory.getSerializer(MyrpcBootstrap.SERIALIZE_TYPE).getCode())
-                        .timeStamp(start)
-                        .build();
+                while (tryTimes > 0) {
+                    Channel channel = entry.getValue();
 
-                // 异步策略读取返回结果
-                CompletableFuture<Object> completableFuture = new CompletableFuture<>();
-                // 将completableFuture 暴露出去
-                MyrpcBootstrap.PENDING_REQUEST.put(myrpcRequest.getRequestId(), completableFuture);
+                    long start = System.currentTimeMillis();
 
-                channel.writeAndFlush(myrpcRequest)
-                        .addListener( (ChannelFutureListener) promise -> {
-                            if (!promise.isSuccess()) {
-                                completableFuture.completeExceptionally(promise.cause());
-                            }
-                        });
+                    // 构建一个心跳请求
+                    MyrpcRequest myrpcRequest = MyrpcRequest.builder()
+                            .requestId(MyrpcBootstrap.ID_GENERATOR.getId())
+                            .compressType(CompressorFactory.getCompressor(MyrpcBootstrap.COMPRESS_TYPE).getCode())
+                            .requestType((RequestType.heart_BEAT.getId()))
+                            .serializeType(SerializerFactory.getSerializer(MyrpcBootstrap.SERIALIZE_TYPE).getCode())
+                            .timeStamp(start)
+                            .build();
 
-                Long endTime = null;
-                try {
-                    completableFuture.get();
-                    endTime = System.currentTimeMillis();
-                } catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException(e);
+                    // 异步策略读取返回结果
+                    CompletableFuture<Object> completableFuture = new CompletableFuture<>();
+                    // 将completableFuture 暴露出去
+                    MyrpcBootstrap.PENDING_REQUEST.put(myrpcRequest.getRequestId(), completableFuture);
+
+                    channel.writeAndFlush(myrpcRequest)
+                            .addListener( (ChannelFutureListener) promise -> {
+                                if (!promise.isSuccess()) {
+                                    completableFuture.completeExceptionally(promise.cause());
+                                }
+                            });
+
+                    Long endTime = 0L;
+                    try {
+                        completableFuture.get(1, TimeUnit.SECONDS);
+                        endTime = System.currentTimeMillis();
+                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+
+                        tryTimes--;
+
+                        log.error("和地址为【{}】的主机连接发生异常,正在进行第【{}】次连接......", channel.remoteAddress(), 3 - tryTimes);
+
+                        if (tryTimes == 0) {
+                            // 将失效的地址移出服务列表
+                            MyrpcBootstrap.CHANNEL_CACHE.remove(entry.getKey());
+                        }
+
+                        try {
+                            Thread.sleep(10 * (new Random().nextInt(5)));
+                        } catch (InterruptedException ex) {
+                            throw new RuntimeException(ex);
+                        }
+
+                        continue;
+                    }
+
+                    Long time = endTime - start;
+
+                    MyrpcBootstrap.ANSWERING_TIME_CHANNEL_CACHE.put(time, channel);
+                    log.debug( "和【{}】服务器的响应时间是【{}】 " , entry.getKey(), time);
+                    break;
                 }
-
-                Long time = endTime - start;
-
-                MyrpcBootstrap.ANSWERING_TIME_CHANNEL_CACHE.put(time, channel);
-               log.debug( "和【{}】服务器的响应时间是【{}】 " , entry.getKey(), time);
             }
 
             log.info("------------------响应时间treemap-----------------------");

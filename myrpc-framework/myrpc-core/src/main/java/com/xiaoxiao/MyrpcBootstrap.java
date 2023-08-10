@@ -7,7 +7,9 @@ import com.xiaoxiao.code.HeartbeatDetector;
 import com.xiaoxiao.discovery.Registry;
 import com.xiaoxiao.discovery.RegistryConfig;
 import com.xiaoxiao.loadbalance.LoadBalancer;
+import com.xiaoxiao.loadbalance.impl.ConsistentHashBalancer;
 import com.xiaoxiao.loadbalance.impl.MinimumResponseTimeLoadBalancer;
+import com.xiaoxiao.loadbalance.impl.RoundRobinLoadBalancer;
 import com.xiaoxiao.transport.message.MyrpcRequest;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -36,7 +38,6 @@ public class MyrpcBootstrap {
     private String appName = "default";
     private RegistryConfig registryConfig;
     private ProtocolConfig protocolConfig;
-//    private int port = 8090;
     public static final IdGenerator ID_GENERATOR = new IdGenerator(1,2);
     // 注册中心
     private Registry registry;
@@ -81,14 +82,11 @@ public class MyrpcBootstrap {
      */
     public MyrpcBootstrap registry(RegistryConfig registryConfig) {
 
-        // 维护的zookeeper实例
-//        this.zooKeeper = ZookeeperUtils.createZookeeper();
-
         // 使用 registryConfig 获取注册中心
         this.registry = registryConfig.getRegistry();
 
         // Todo 需要修改
-        MyrpcBootstrap.LOAD_BALANCER = new MinimumResponseTimeLoadBalancer();
+        MyrpcBootstrap.LOAD_BALANCER = new RoundRobinLoadBalancer();
 
         return this;
     }

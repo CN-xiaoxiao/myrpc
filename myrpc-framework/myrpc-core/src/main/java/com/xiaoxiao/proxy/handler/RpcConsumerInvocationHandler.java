@@ -1,6 +1,5 @@
 package com.xiaoxiao.proxy.handler;
 
-import com.xiaoxiao.IdGenerator;
 import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.NettyBootstrapInitializer;
 import com.xiaoxiao.compress.CompressorFactory;
@@ -11,7 +10,6 @@ import com.xiaoxiao.exceptions.NetWorkException;
 import com.xiaoxiao.serialize.SerializerFactory;
 import com.xiaoxiao.transport.message.MyrpcRequest;
 import com.xiaoxiao.transport.message.RequestPayload;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +44,7 @@ public class RpcConsumerInvocationHandler implements InvocationHandler {
     }
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    public Object invoke(Object proxy, Method method, Object[] args) {
 
         // 1、封装报文
         RequestPayload requestPayload = RequestPayload.builder()
@@ -97,7 +95,12 @@ public class RpcConsumerInvocationHandler implements InvocationHandler {
         MyrpcBootstrap.REQUEST_THREAD_LOCAL.remove();
 
         // 5、获得响应的结果
-        return completableFuture.get(10, TimeUnit.SECONDS);
+        try {
+            return completableFuture.get(10, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            log.error("获得结果时发生异常",e);
+        }
+        return null;
     }
 
 

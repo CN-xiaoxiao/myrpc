@@ -1,7 +1,6 @@
 package com.xiaoxiao.loadbalance;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 
 public interface Selector {
 
@@ -11,6 +10,4 @@ public interface Selector {
      */
     InetSocketAddress getNext();
 
-    // Todo 服务动态上下线需要进行reBalance()
-    void reBalance();
 }

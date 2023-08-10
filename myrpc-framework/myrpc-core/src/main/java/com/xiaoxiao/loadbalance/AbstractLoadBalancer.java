@@ -1,8 +1,6 @@
 package com.xiaoxiao.loadbalance;
 
 import com.xiaoxiao.MyrpcBootstrap;
-import com.xiaoxiao.discovery.Registry;
-import com.xiaoxiao.loadbalance.impl.RoundRobinLoadBalancer;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -28,4 +26,9 @@ public abstract class AbstractLoadBalancer implements LoadBalancer{
     }
 
     protected abstract Selector getSelector(List<InetSocketAddress> serviceList);
+
+    @Override
+    public synchronized void reLoadBalance(String serviceName, List<InetSocketAddress> addresses) {
+        cache.put(serviceName, getSelector(addresses));
+    }
 }
