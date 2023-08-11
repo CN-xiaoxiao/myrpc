@@ -5,7 +5,7 @@ import com.xiaoxiao.channelhandler.handler.MethodCallHandler;
 import com.xiaoxiao.channelhandler.handler.MyrpcRequestDecoder;
 import com.xiaoxiao.channelhandler.handler.MyrpcResponseEncoder;
 import com.xiaoxiao.code.HeartbeatDetector;
-import com.xiaoxiao.discovery.Registry;
+import com.xiaoxiao.config.Configuration;
 import com.xiaoxiao.discovery.RegistryConfig;
 import com.xiaoxiao.loadbalance.LoadBalancer;
 import com.xiaoxiao.transport.message.MyrpcRequest;
@@ -89,20 +89,6 @@ public class MyrpcBootstrap {
      */
     public MyrpcBootstrap loadBalancer(LoadBalancer loadBalancer) {
         configuration.setLoadBalancer(loadBalancer);
-        return this;
-    }
-
-    /**
-     * 配置当前暴露的服务使用的协议
-     * @param protocolConfig 封装的协议
-     * @return this当前实例
-     */
-    public MyrpcBootstrap protocol(ProtocolConfig protocolConfig) {
-        configuration.setProtocolConfig(protocolConfig);
-
-        if (log.isDebugEnabled()) {
-            log.debug("当前工程使用了：{} 协议进行序列化", protocolConfig.toString());
-        }
         return this;
     }
 

@@ -1,13 +1,13 @@
-package com.xiaoxiao;
+package com.xiaoxiao.config;
 
+import com.xiaoxiao.IdGenerator;
+import com.xiaoxiao.ProtocolConfig;
 import com.xiaoxiao.compress.Compressor;
-import com.xiaoxiao.compress.impl.GzipCompressor;
+import com.xiaoxiao.compress.CompressorFactory;
 import com.xiaoxiao.discovery.RegistryConfig;
 import com.xiaoxiao.loadbalance.LoadBalancer;
-import com.xiaoxiao.loadbalance.impl.RoundRobinLoadBalancer;
 import com.xiaoxiao.serialize.Serializer;
-import com.xiaoxiao.serialize.impl.JdkSerializer;
-import lombok.Data;
+import com.xiaoxiao.serialize.SerializerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -20,43 +20,16 @@ import javax.xml.xpath.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
 
-/**
- * 全局的配置类，代码配置--->xml配置--->spi配置--->默认项
- */
-@Data
 @Slf4j
-public class Configuration {
-    // 端口号
-    private int port = 8090;
-
-    // 应用名称的名字
-    private String appName = "default";
-    // 注册中心
-    private RegistryConfig registryConfig = new RegistryConfig("zookeeper://127.0.0.1:2181");
-    // 序列化协议
-    private ProtocolConfig protocolConfig = new ProtocolConfig("jdk");
-    private String serializeType = "jdk";
-    private Serializer serializer = new JdkSerializer();
-    private String compressType = "gzip";
-    private Compressor compressor = new GzipCompressor();
-    // ID生成器
-    private IdGenerator idGenerator = new IdGenerator(1,2);
-    // 负载均衡策略
-    private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
-
-    private String packageName;
-
-    // 读xml
-    public Configuration() {
-        loadFromXml(this);
-    }
+public class XmlResolver {
 
     /**
      * 从配置文件中读取配置信息
      * @param configuration 配置实例
      */
-    private void loadFromXml(Configuration configuration) {
+    public void loadFromXml(Configuration configuration) {
 
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -72,15 +45,23 @@ public class Configuration {
 
             // 解析所有的标签
             configuration.setPort(resolvePort(document, xPath));
+
             configuration.setAppName(resolveAppName(document, xPath));
+
             configuration.setIdGenerator(resolveIdGenerator(document, xPath));
+
             configuration.setRegistryConfig(resolveRegistryConfig(document, xPath));
+
             configuration.setCompressType(resolveCompressType(document, xPath));
-            configuration.setCompressor(resolveCompressor(document, xPath));
+            ObjectWrapper<Compressor> compressorObjectWrapper = resolveCompressor(document, xPath);
+            CompressorFactory.addCompressor(compressorObjectWrapper);;
+
             configuration.setSerializeType(resolveSerializeType(document, xPath));
-            configuration.setProtocolConfig(new ProtocolConfig(this.getSerializeType()));
-            configuration.setSerializer(resolveSerializer(document, xPath));
+            ObjectWrapper<Serializer> serializerObjectWrapper = resolveSerializer(document, xPath);
+            SerializerFactory.addSerializer(serializerObjectWrapper);
+
             configuration.setLoadBalancer(resolveLoadBalancer(document, xPath));
+
             configuration.setPackageName(resolvePackageName(document, xPath));
 
         } catch (ParserConfigurationException | IOException | SAXException e) {
@@ -180,11 +161,14 @@ public class Configuration {
      * @param xPath xpath解析器
      * @return 压缩的具体实例
      */
-    private Compressor resolveCompressor(Document document, XPath xPath) {
+    private ObjectWrapper<Compressor> resolveCompressor(Document document, XPath xPath) {
         String expression = "/configuration/compressor";
-        Object object = parseObject(document, xPath, expression, null);
+        Compressor compressor = parseObject(document, xPath, expression, null);
 
-        return (Compressor) object;
+        byte code = Byte.parseByte(Objects.requireNonNull(parseString(document, xPath, expression, "code")));
+        String name = parseString(document, xPath, expression, "name");
+
+        return new ObjectWrapper<>(code, name, compressor);
     }
 
     /**
@@ -206,9 +190,13 @@ public class Configuration {
      * @param xPath xpath解析器
      * @return 序列化类型
      */
-    private Serializer resolveSerializer(Document document, XPath xPath) {
+    private ObjectWrapper<Serializer> resolveSerializer(Document document, XPath xPath) {
         String expression = "/configuration/serializer";
-        return parseObject(document, xPath, expression, null);
+        Serializer serializer = parseObject(document, xPath, expression, null);
+        byte code = Byte.parseByte(Objects.requireNonNull(parseString(document, xPath, expression, "code")));
+        String name = parseString(document, xPath, expression, "name");
+
+        return new ObjectWrapper<>(code, name, serializer);
     }
 
     /**
@@ -224,7 +212,6 @@ public class Configuration {
         return (LoadBalancer) object;
     }
 
-
     /**
      * 解析一个节点，返回一个实例
      * @param document 文档对象
@@ -239,6 +226,10 @@ public class Configuration {
         try {
             XPathExpression expr = xPath.compile(expression);
             Node targetNode = (Node) expr.evaluate(document, XPathConstants.NODE);
+
+            if (targetNode == null) {
+                return null;
+            }
 
             String className = targetNode.getAttributes().getNamedItem("class").getNodeValue();
 
@@ -273,6 +264,10 @@ public class Configuration {
             XPathExpression expr = xPath.compile(expression);
             Node targetNode = (Node) expr.evaluate(document, XPathConstants.NODE);
 
+            if (targetNode == null) {
+                return null;
+            }
+
             return targetNode.getAttributes().getNamedItem(attributeName).getNodeValue();
 
         } catch (XPathExpressionException e) {
@@ -293,6 +288,10 @@ public class Configuration {
         try {
             XPathExpression expr = xPath.compile(expression);
             Node targetNode = (Node) expr.evaluate(document, XPathConstants.NODE);
+
+            if (targetNode == null) {
+                return null;
+            }
 
             return targetNode.getTextContent();
 

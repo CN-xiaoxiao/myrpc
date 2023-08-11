@@ -44,13 +44,13 @@ public class MyrpcRequestEncoder extends MessageToByteEncoder<MyrpcRequest> {
 
         if (myrpcRequest.getRequestPayload() != null) {
             // 序列化
-            Serializer serializer = SerializerFactory.getSerializer(myrpcRequest.getSerializeType()).getSerializer();
+            Serializer serializer = SerializerFactory.getSerializer(myrpcRequest.getSerializeType()).getImpl();
 
             body = serializer.serialize(myrpcRequest.getRequestPayload());
 
             // 压缩
             if (body != null && body.length != 0) {
-                Compressor compressor = CompressorFactory.getCompressor(myrpcRequest.getCompressType()).getCompressor();
+                Compressor compressor = CompressorFactory.getCompressor(myrpcRequest.getCompressType()).getImpl();
                 body = compressor.compress(body);
             }
         }

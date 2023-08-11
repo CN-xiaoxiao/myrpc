@@ -46,13 +46,13 @@ public class MyrpcResponseEncoder extends MessageToByteEncoder<MyrpcResponse> {
             // 对响应进行序列化
             Serializer serializer = SerializerFactory
                     .getSerializer(myrpcResponse.getSerializeType())
-                    .getSerializer();
+                    .getImpl();
             body = serializer.serialize(myrpcResponse.getBody());
 
             // 压缩
             Compressor compressor = CompressorFactory
                     .getCompressor(myrpcResponse.getCompressType())
-                    .getCompressor();
+                    .getImpl();
 
             body = compressor.compress(body);
         }

@@ -99,14 +99,14 @@ public class MyrpcResponseDecoder extends LengthFieldBasedFrameDecoder {
             // 1、解压缩
             Compressor compressor = CompressorFactory
                     .getCompressor(compressType)
-                    .getCompressor();
+                    .getImpl();
 
             payload = compressor.decompress(payload);
 
             // 2、反序列化
             Serializer serializer = SerializerFactory
                     .getSerializer(serializeType)
-                    .getSerializer();
+                    .getImpl();
 
             Object body = serializer.deserialize(payload, Object.class);
             myrpcResponse.setBody(body);

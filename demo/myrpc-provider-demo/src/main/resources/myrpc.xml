@@ -8,10 +8,10 @@
     <registry url="zookeeper://127.0.0.1:2181"/>
 
     <serializeType type="jdk"/>
-    <serializer class="com.xiaoxiao.serialize.impl.JdkSerializer"/>
+    <serializer code="1" name="jdk" class="com.xiaoxiao.serialize.impl.JdkSerializer"/>
 
     <compressType type="gzip"/>
-    <compressor class="com.xiaoxiao.compress.impl.GzipCompressor"/>
+    <compressor code="1" name="gzip" class="com.xiaoxiao.compress.impl.GzipCompressor"/>
 
     <loadBalancerType type="minimumResponseTimeLoadBalancer"/>
     <loadBalancer class="com.xiaoxiao.loadbalance.impl.MinimumResponseTimeLoadBalancer"/>

@@ -1,0 +1,5 @@
+1-jdk-com.xiaoxiao.serialize.impl.JdkSerializer
+2-json-com.xiaoxiao.serialize.impl.JsonSerializer
+3-hessian-com.xiaoxiao.serialize.impl.HessianSerializer
+4-kryo-com.xiaoxiao.serialize.impl.KryoSerializer
+5-fury-com.xiaoxiao.serialize.impl.FurySerializer

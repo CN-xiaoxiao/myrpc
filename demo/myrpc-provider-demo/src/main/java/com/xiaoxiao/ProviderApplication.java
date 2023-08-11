@@ -16,10 +16,10 @@ public class ProviderApplication {
         // 3、通过启动引导程序，启动服务提供方发布服务、启动服务
         MyrpcBootstrap.getInstance()
                 .application("first-myrpc-provider")
-//                .registry(new RegistryConfig("zookeeper://127.0.0.1:2181")) // 配置注册中心
-//                .protocol(new ProtocolConfig("jdk"))    // 配置序列化协议
+                .registry(new RegistryConfig("zookeeper://127.0.0.1:2181")) // 配置注册中心
+                .serialize("jdk")
 //                .publish(service)   // 发布服务
-                .scan() // 包扫描发布服务
+                .scan("com.xiaoxiao") // 包扫描发布服务
                 .start();   // 启动服务
     }
 }
