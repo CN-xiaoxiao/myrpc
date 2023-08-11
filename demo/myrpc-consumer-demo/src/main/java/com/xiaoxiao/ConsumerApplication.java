@@ -18,9 +18,9 @@ public class ConsumerApplication {
         // 4、发送请求
         MyrpcBootstrap.getInstance()
                 .application("first-myprc-consumer")
-                .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
-                .serialize("fury")
-                .compress("gzip")
+//                .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
+//                .serialize("fury")
+//                .compress("gzip")
                 .reference(reference);
 
         HelloMyrpc helloMyrpc = reference.get();

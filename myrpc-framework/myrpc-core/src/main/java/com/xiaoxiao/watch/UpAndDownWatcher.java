@@ -25,7 +25,7 @@ public class UpAndDownWatcher implements Watcher {
 
             String serviceName = getServiceName(watchedEvent.getPath());
 
-            Registry registry = MyrpcBootstrap.getInstance().getRegistry();
+            Registry registry = MyrpcBootstrap.getInstance().getConfiguration().getRegistryConfig().getRegistry();
             List<InetSocketAddress> addresses = registry.lookup(serviceName);
 
             // 处理新增的节点
@@ -49,7 +49,7 @@ public class UpAndDownWatcher implements Watcher {
             }
 
             // 获得负载均衡器，进行重新的loadBalance
-            LoadBalancer loadBalancer = MyrpcBootstrap.LOAD_BALANCER;
+            LoadBalancer loadBalancer = MyrpcBootstrap.getInstance().getConfiguration().getLoadBalancer();
             loadBalancer.reLoadBalance(serviceName, addresses);
 
         }

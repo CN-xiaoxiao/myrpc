@@ -42,7 +42,7 @@ public class ZookeeperRegistry extends AbstractRegistry {
 
         // 创建本机的临时节点
         // Todo 端口处理
-        String node = parentNode + "/" + NetUtils.getIp() + ":" + MyrpcBootstrap.PORT;
+        String node = parentNode + "/" + NetUtils.getIp() + ":" + MyrpcBootstrap.getInstance().getConfiguration().getPort();
         if (!ZookeeperUtils.exists(zooKeeper, node, null)) {
             ZookeeperNode zookeeperNode = new ZookeeperNode(node, null);
             ZookeeperUtils.createNode(zooKeeper, zookeeperNode, null, CreateMode.EPHEMERAL);

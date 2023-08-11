@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration SYSTEM "myrpc-config.dtd">
+
+<configuration>
+    <port>8088</port>
+    <appName>myrpc-default-appName</appName>
+
+    <registry url="zookeeper://127.0.0.1:2181"/>
+
+    <serializeType type="jdk"/>
+    <serializer class="com.xiaoxiao.serialize.impl.JdkSerializer"/>
+
+    <compressType type="gzip"/>
+    <compressor class="com.xiaoxiao.compress.impl.GzipCompressor"/>
+
+    <loadBalancerType type="minimumResponseTimeLoadBalancer"/>
+    <loadBalancer class="com.xiaoxiao.loadbalance.impl.MinimumResponseTimeLoadBalancer"/>
+
+    <idGenerator class="com.xiaoxiao.IdGenerator" dataCenterId="2" machineId="4"/>
+
+</configuration>
