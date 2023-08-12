@@ -4,8 +4,9 @@ import com.xiaoxiao.annotation.MyrpcApi;
 import com.xiaoxiao.channelhandler.handler.MethodCallHandler;
 import com.xiaoxiao.channelhandler.handler.MyrpcRequestDecoder;
 import com.xiaoxiao.channelhandler.handler.MyrpcResponseEncoder;
-import com.xiaoxiao.code.HeartbeatDetector;
+import com.xiaoxiao.core.HeartbeatDetector;
 import com.xiaoxiao.config.Configuration;
+import com.xiaoxiao.core.MyrpcShutdownHook;
 import com.xiaoxiao.discovery.RegistryConfig;
 import com.xiaoxiao.loadbalance.LoadBalancer;
 import com.xiaoxiao.transport.message.MyrpcRequest;
@@ -125,6 +126,10 @@ public class MyrpcBootstrap {
      * 启动netty服务
      */
     public void start() {
+
+        // 注册关闭应用程序的钩子函数
+        Runtime.getRuntime().addShutdownHook(new MyrpcShutdownHook());
+
         // 1、创建eventLoop，boss只负责处理请求，并将请求分发至worker
         EventLoopGroup boss = new NioEventLoopGroup(2);
         EventLoopGroup worker = new NioEventLoopGroup(10);
@@ -251,10 +256,15 @@ public class MyrpcBootstrap {
                 throw new RuntimeException(e);
             }
 
+            // 获取分组信息
+            MyrpcApi myrpcApi = clazz.getAnnotation(MyrpcApi.class);
+            String group = myrpcApi.group();
+
             for (Class<?> anInterface : interfaces) {
                 ServiceConfig<?> serviceConfig = new ServiceConfig<>();
                 serviceConfig.setInterface(anInterface);
                 serviceConfig.setRef(instance);
+                serviceConfig.setGroup(group);
 
                 if (log.isDebugEnabled()) {
                     log.debug("---->已经通过包扫描将服务【{}】发布", anInterface);

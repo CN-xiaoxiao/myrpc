@@ -4,6 +4,7 @@ import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.enumeration.ResponseCode;
 import com.xiaoxiao.exceptions.ResponseException;
 import com.xiaoxiao.protection.CircuitBreaker;
+import com.xiaoxiao.transport.message.MyrpcRequest;
 import com.xiaoxiao.transport.message.MyrpcResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -58,8 +59,22 @@ public class MySimpleChannelInboundHandler extends SimpleChannelInboundHandler<M
             if (log.isDebugEnabled()) {
                 log.debug("已寻找到编号为【{}】的completableFuture，处理心跳请求", myrpcResponse.getRequestId());
             }
+        } else if (code == ResponseCode.CLOSING.getCode()) {
+            completableFuture.complete(null);
+
+            if (log.isDebugEnabled()) {
+                log.debug("当前id为【{}】的请求，被拒绝，目标服务器正在关闭，响应码为【{}】", myrpcResponse.getRequestId(), myrpcResponse.getCode());
+            }
+
+            // 修正负载均衡器
+            MyrpcBootstrap.CHANNEL_CACHE.remove(socketAddress);
+            // 重新进行负载均衡
+            MyrpcRequest myrpcRequest = MyrpcBootstrap.REQUEST_THREAD_LOCAL.get();
+
+            MyrpcBootstrap.getInstance().getConfiguration().getLoadBalancer().reLoadBalance(myrpcRequest.getRequestPayload().getInterfaceName(),
+                    MyrpcBootstrap.CHANNEL_CACHE.keySet().stream().toList());
+
+            throw new ResponseException(code, ResponseCode.CLOSING.getDesc());
         }
-
-
     }
 }

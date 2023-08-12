@@ -29,7 +29,12 @@ public class ConsumerApplication {
         System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 
         while (true) {
-            for (int i = 0; i < 50; i++) {
+            for (int i = 0; i < 500; i++) {
+                try {
+                    Thread.sleep(20);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 String sayHi = helloMyrpc.sayHi("Hello");
                 log.info("sayHi-->{}", sayHi);
             }

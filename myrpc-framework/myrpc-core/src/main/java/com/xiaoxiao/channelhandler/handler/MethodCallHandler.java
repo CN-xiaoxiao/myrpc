@@ -2,6 +2,7 @@ package com.xiaoxiao.channelhandler.handler;
 
 import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.ServiceConfig;
+import com.xiaoxiao.core.ShutDownHolder;
 import com.xiaoxiao.enumeration.RequestType;
 import com.xiaoxiao.enumeration.ResponseCode;
 import com.xiaoxiao.protection.RateLimiter;
@@ -30,8 +31,20 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<MyrpcRequest>
         myrpcResponse.setCompressType(myrpcRequest.getCompressType());
         myrpcResponse.setSerializeType(myrpcRequest.getSerializeType());
 
-        // 2、完成限流相关的操作
+        // 2、获得channel
         Channel channel = channelHandlerContext.channel();
+
+        // 3、查看关闭的挡板是否打开
+        if (ShutDownHolder.BAFFLE.get()) {
+            myrpcResponse.setCode(ResponseCode.CLOSING.getCode());
+            channel.writeAndFlush(myrpcResponse);
+            return;
+        }
+
+        // 4、计算器减一
+        ShutDownHolder.REQUEST_COUNTER.increment();
+
+        // 完成限流相关的操作
         SocketAddress socketAddress = channel.remoteAddress();
         Map<SocketAddress, RateLimiter> everyIpRateLimiter = MyrpcBootstrap
                 .getInstance()
@@ -46,6 +59,7 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<MyrpcRequest>
 
         boolean allowRequest = rateLimiter.allowRequest();
 
+        // 5、处理请求的逻辑
         // 限流
         if (!allowRequest) {
             myrpcResponse.setCode(ResponseCode.RATE_LIMIT.getCode());
@@ -71,8 +85,11 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<MyrpcRequest>
                 myrpcResponse.setCode(ResponseCode.FAIL.getCode());
             }
         }
-        // 4、写出相应
+        // 6、写出相应
         channel.writeAndFlush(myrpcResponse);
+
+        // 7、计算器减一
+        ShutDownHolder.REQUEST_COUNTER.decrement();
     }
 
     private Object callTargetMethod(RequestPayload requestPayload) {

@@ -1,4 +1,4 @@
-package com.xiaoxiao.code;
+package com.xiaoxiao.core;
 
 import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.NettyBootstrapInitializer;

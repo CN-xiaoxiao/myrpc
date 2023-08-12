@@ -10,7 +10,8 @@ public enum ResponseCode {
     SUCCESS_HEART_BEAT((byte) 21, "心跳检测成功返回"),
     RATE_LIMIT((byte) 31, "服务被限流"),
     RESOURCE_NOT_FOUND((byte) 44, "请求的资源不存在"),
-    FAIL((byte) 50, "方法调用失败");
+    FAIL((byte) 50, "方法调用失败"),
+    CLOSING((byte) 51, "服务器正在关闭");
 
     private byte code;
     private String desc;
