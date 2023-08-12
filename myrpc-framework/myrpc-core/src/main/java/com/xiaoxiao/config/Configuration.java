@@ -1,16 +1,17 @@
 package com.xiaoxiao.config;
 
 import com.xiaoxiao.IdGenerator;
-import com.xiaoxiao.ProtocolConfig;
-import com.xiaoxiao.compress.Compressor;
-import com.xiaoxiao.compress.impl.GzipCompressor;
 import com.xiaoxiao.discovery.RegistryConfig;
 import com.xiaoxiao.loadbalance.LoadBalancer;
 import com.xiaoxiao.loadbalance.impl.RoundRobinLoadBalancer;
-import com.xiaoxiao.serialize.Serializer;
-import com.xiaoxiao.serialize.impl.JdkSerializer;
+import com.xiaoxiao.protection.CircuitBreaker;
+import com.xiaoxiao.protection.RateLimiter;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+
+import java.net.SocketAddress;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -34,6 +35,10 @@ public class Configuration {
     private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
 
     private String packageName;
+    // 为每一个ip配置一个限流器
+    private final Map<SocketAddress, RateLimiter> everyIpRateLimiter = new ConcurrentHashMap<>(16);
+    // 为每一个ip配置一个熔断器
+    private final Map<SocketAddress, CircuitBreaker> everyIpCircuitBreaker = new ConcurrentHashMap<>(16);
 
     // 读配置信息
     public Configuration() {

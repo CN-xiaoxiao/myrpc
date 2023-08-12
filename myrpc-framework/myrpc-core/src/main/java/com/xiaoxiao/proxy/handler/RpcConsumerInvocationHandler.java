@@ -2,11 +2,14 @@ package com.xiaoxiao.proxy.handler;
 
 import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.NettyBootstrapInitializer;
+import com.xiaoxiao.annotation.TryTimes;
 import com.xiaoxiao.compress.CompressorFactory;
 import com.xiaoxiao.discovery.Registry;
 import com.xiaoxiao.enumeration.RequestType;
 import com.xiaoxiao.exceptions.DiscoveryException;
 import com.xiaoxiao.exceptions.NetWorkException;
+import com.xiaoxiao.exceptions.ResponseException;
+import com.xiaoxiao.protection.CircuitBreaker;
 import com.xiaoxiao.serialize.SerializerFactory;
 import com.xiaoxiao.transport.message.MyrpcRequest;
 import com.xiaoxiao.transport.message.RequestPayload;
@@ -17,7 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Date;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -44,63 +51,121 @@ public class RpcConsumerInvocationHandler implements InvocationHandler {
     }
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) {
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 
-        // 1、封装报文
-        RequestPayload requestPayload = RequestPayload.builder()
-                .interfaceName(interfaceRef.getName())
-                .methodName(method.getName())
-                .parametersType(method.getParameterTypes())
-                .parametersValue(args)
-                .returnType(method.getReturnType())
-                .build();
+        // 从方法中判断是否需要重试
+        TryTimes annotation = method.getAnnotation(TryTimes.class);
 
-        // 对各种请求id和请求类型进行处理
-        MyrpcRequest myrpcRequest = MyrpcRequest.builder()
-                .requestId(MyrpcBootstrap.getInstance().getConfiguration().getIdGenerator().getId())
-                .compressType(CompressorFactory.getCompressor(MyrpcBootstrap.getInstance().getConfiguration().getCompressType()).getCode())
-                .requestType((RequestType.REQUEST.getId()))
-                .serializeType(SerializerFactory.getSerializer(MyrpcBootstrap.getInstance().getConfiguration().getSerializeType()).getCode())
-                .timeStamp(new Date().getTime())
-                .requestPayload(requestPayload)
-                .build();
+        // 默认值为0，不重试
+        int tryTimes = 0;
+        int intervalTime = 0;
 
-        // 将请求存入本地线程
-        MyrpcBootstrap.REQUEST_THREAD_LOCAL.set(myrpcRequest);
-
-        // 2、发现服务，从注册中心拉取服务列表，并通过客户端负载均衡寻找一个可用的服务
-        InetSocketAddress address = MyrpcBootstrap.getInstance().getConfiguration().getLoadBalancer().selectServiceAddress(interfaceRef.getName());
-
-        if (log.isDebugEnabled()) {
-            log.debug("服务调用方，发现了服务【{}】的可用主机【{}】", interfaceRef.getName(), address);
+        if (annotation != null) {
+            tryTimes = annotation.tryTimes();
+            intervalTime = annotation.intervalTime();
         }
 
-        // 使用netty连接服务器，发送调用的服务的名字+方法名字+参数列表，得到结果
-        // 3、获取一个可用的channel
-        Channel channel = getAvailableChannel(address);
+        while (true) {
 
-        // 4、异步策略读取返回结果
-        CompletableFuture<Object> completableFuture = new CompletableFuture<>();
-        // 将completableFuture 暴露出去
-        MyrpcBootstrap.PENDING_REQUEST.put(myrpcRequest.getRequestId(), completableFuture);
+            // 1、封装报文
+            RequestPayload requestPayload = RequestPayload.builder()
+                    .interfaceName(interfaceRef.getName())
+                    .methodName(method.getName())
+                    .parametersType(method.getParameterTypes())
+                    .parametersValue(args)
+                    .returnType(method.getReturnType())
+                    .build();
 
-        channel.writeAndFlush(myrpcRequest)
-                .addListener( (ChannelFutureListener) promise -> {
-                    if (!promise.isSuccess()) {
-                        completableFuture.completeExceptionally(promise.cause());
-                    }
-                });
+            // 对各种请求id和请求类型进行处理
+            MyrpcRequest myrpcRequest = MyrpcRequest.builder()
+                    .requestId(MyrpcBootstrap.getInstance().getConfiguration().getIdGenerator().getId())
+                    .compressType(CompressorFactory.getCompressor(MyrpcBootstrap.getInstance().getConfiguration().getCompressType()).getCode())
+                    .requestType((RequestType.REQUEST.getId()))
+                    .serializeType(SerializerFactory.getSerializer(MyrpcBootstrap.getInstance().getConfiguration().getSerializeType()).getCode())
+                    .timeStamp(new Date().getTime())
+                    .requestPayload(requestPayload)
+                    .build();
 
-        // 清理threadLocal
-        MyrpcBootstrap.REQUEST_THREAD_LOCAL.remove();
+            // 将请求存入本地线程
+            MyrpcBootstrap.REQUEST_THREAD_LOCAL.set(myrpcRequest);
 
-        // 5、获得响应的结果
-        try {
-            return completableFuture.get(10, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            log.error("获得结果时发生异常",e);
+            // 2、发现服务，从注册中心拉取服务列表，并通过客户端负载均衡寻找一个可用的服务
+            InetSocketAddress address = MyrpcBootstrap.getInstance().getConfiguration().getLoadBalancer().selectServiceAddress(interfaceRef.getName());
+
+            if (log.isDebugEnabled()) {
+                log.debug("服务调用方，发现了服务【{}】的可用主机【{}】", interfaceRef.getName(), address);
+            }
+
+            // 获取当前地址的熔断器
+            Map<SocketAddress, CircuitBreaker> everyIpCircuitBreaker = MyrpcBootstrap.getInstance().getConfiguration().getEveryIpCircuitBreaker();
+            CircuitBreaker circuitBreaker = everyIpCircuitBreaker.get(address);
+            if (circuitBreaker == null) {
+                circuitBreaker = new CircuitBreaker(10,.5F);
+                everyIpCircuitBreaker.put(address, circuitBreaker);
+            }
+
+            try {
+
+                if (myrpcRequest.getRequestType() != RequestType.heart_BEAT.getId() && circuitBreaker.isBreak()) {
+                    // 定期打开熔断器
+                    Timer timer = new Timer();
+                    timer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            MyrpcBootstrap
+                                    .getInstance()
+                                    .getConfiguration()
+                                    .getEveryIpCircuitBreaker()
+                                    .get(address)
+                                    .reset();
+                        }
+                    }, 5000);
+                    throw new RuntimeException("当前熔断器已经开启，无法发送请求");
+                }
+
+                // 使用netty连接服务器，发送调用的服务的名字+方法名字+参数列表，得到结果
+                // 3、获取一个可用的channel
+                Channel channel = getAvailableChannel(address);
+
+                // 4、异步策略读取返回结果
+                CompletableFuture<Object> completableFuture = new CompletableFuture<>();
+                // 将completableFuture 暴露出去
+                MyrpcBootstrap.PENDING_REQUEST.put(myrpcRequest.getRequestId(), completableFuture);
+
+                channel.writeAndFlush(myrpcRequest)
+                        .addListener( (ChannelFutureListener) promise -> {
+                            if (!promise.isSuccess()) {
+                                completableFuture.completeExceptionally(promise.cause());
+                            }
+                        });
+
+                // 清理threadLocal
+                MyrpcBootstrap.REQUEST_THREAD_LOCAL.remove();
+
+                // 5、获得响应的结果
+                Object result = completableFuture.get(10, TimeUnit.SECONDS);
+                // 记录成功的请求
+                circuitBreaker.recordRequest();
+
+                return result;
+            } catch (Exception e) {
+                tryTimes--;
+                // 记录错误的次数
+                circuitBreaker.recordErrorRequest();
+                try {
+                    Thread.sleep(intervalTime);
+                } catch (InterruptedException ex) {
+                    log.error("在进行重试时发生异常", ex);
+                }
+                if (tryTimes<0) {
+                    log.error("对方法【{}】进行远程调用时，重试{}次, 依旧不可调用", method.getName(), 3 - tryTimes, e);
+                    break;
+
+                }
+                log.error("在进行第{}重试时发生异常", 3 - tryTimes, e);
+            }
         }
-        return null;
+        throw new RuntimeException("对方法【" + method.getName() + "】进行调用得到结果时发生异常");
     }
 
 

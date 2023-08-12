@@ -25,16 +25,10 @@ public class ConsumerApplication {
 
         HelloMyrpc helloMyrpc = reference.get();
 
+        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+
         while (true) {
-
-            try {
-                Thread.sleep(10000);
-                System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 50; i++) {
                 String sayHi = helloMyrpc.sayHi("Hello");
                 log.info("sayHi-->{}", sayHi);
             }

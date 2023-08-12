@@ -4,43 +4,75 @@ import com.xiaoxiao.MyrpcBootstrap;
 import com.xiaoxiao.ServiceConfig;
 import com.xiaoxiao.enumeration.RequestType;
 import com.xiaoxiao.enumeration.ResponseCode;
+import com.xiaoxiao.protection.RateLimiter;
+import com.xiaoxiao.protection.TokenBuketRateLimiter;
 import com.xiaoxiao.transport.message.MyrpcRequest;
 import com.xiaoxiao.transport.message.MyrpcResponse;
 import com.xiaoxiao.transport.message.RequestPayload;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.SocketAddress;
+import java.util.Map;
 
 @Slf4j
 public class MethodCallHandler extends SimpleChannelInboundHandler<MyrpcRequest> {
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, MyrpcRequest myrpcRequest) throws Exception {
-        // 1、获取负载内容
-        RequestPayload requestPayload = myrpcRequest.getRequestPayload();
 
-        // 2、根据负载内容进行方法调用
-        Object result = null;
-        if (!(myrpcRequest.getRequestType() == RequestType.heart_BEAT.getId())) {
-            result = callTargetMethod(requestPayload);
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("请求【{}】已经在服务端完成方法调用", myrpcRequest.getRequestId());
-        }
-
-        // 3、封装响应
+        // 1、封装部分响应内容
         MyrpcResponse myrpcResponse = new MyrpcResponse();
-        myrpcResponse.setCode(ResponseCode.SUCCESS.getCode());
         myrpcResponse.setRequestId(myrpcRequest.getRequestId());
         myrpcResponse.setCompressType(myrpcRequest.getCompressType());
         myrpcResponse.setSerializeType(myrpcRequest.getSerializeType());
-        myrpcResponse.setBody(result);
 
+        // 2、完成限流相关的操作
+        Channel channel = channelHandlerContext.channel();
+        SocketAddress socketAddress = channel.remoteAddress();
+        Map<SocketAddress, RateLimiter> everyIpRateLimiter = MyrpcBootstrap
+                .getInstance()
+                .getConfiguration()
+                .getEveryIpRateLimiter();
+        RateLimiter rateLimiter = everyIpRateLimiter.get(socketAddress);
+
+        if (rateLimiter == null) {
+            rateLimiter = new TokenBuketRateLimiter(10,10);
+            everyIpRateLimiter.put(socketAddress,rateLimiter);
+        }
+
+        boolean allowRequest = rateLimiter.allowRequest();
+
+        // 限流
+        if (!allowRequest) {
+            myrpcResponse.setCode(ResponseCode.RATE_LIMIT.getCode());
+        } else if (myrpcRequest.getRequestType() == RequestType.heart_BEAT.getId()) { // 处理心跳
+           myrpcResponse.setCode(ResponseCode.SUCCESS_HEART_BEAT.getCode());
+        } else { //正常调用
+            // 1、获取负载内容
+            RequestPayload requestPayload = myrpcRequest.getRequestPayload();
+
+            try {
+                // 2、根据负载内容进行方法调用
+                Object result = callTargetMethod(requestPayload);
+                if (log.isDebugEnabled()) {
+                    log.debug("请求【{}】已经在服务端完成方法调用", myrpcRequest.getRequestId());
+                }
+
+                // 3、封装响应
+                myrpcResponse.setCode(ResponseCode.SUCCESS.getCode());
+                myrpcResponse.setBody(result);
+
+            } catch (Exception e) {
+                log.error("编号为【{}】的服务在调用过程中发生异常", myrpcRequest.getRequestId(), e);
+                myrpcResponse.setCode(ResponseCode.FAIL.getCode());
+            }
+        }
         // 4、写出相应
-        channelHandlerContext.channel().writeAndFlush(myrpcResponse);
+        channel.writeAndFlush(myrpcResponse);
     }
 
     private Object callTargetMethod(RequestPayload requestPayload) {
