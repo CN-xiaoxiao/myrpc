@@ -11,11 +11,11 @@ public abstract class AbstractLoadBalancer implements LoadBalancer{
     private Map<String, Selector> cache = new ConcurrentHashMap<>(8);
 
     @Override
-    public InetSocketAddress selectServiceAddress(String serviceName) {
+    public InetSocketAddress selectServiceAddress(String serviceName, String group) {
         Selector selector = cache.get(serviceName);
 
         if (selector == null) {
-            List<InetSocketAddress> serviceList = MyrpcBootstrap.getInstance().getConfiguration().getRegistryConfig().getRegistry().lookup(serviceName);
+            List<InetSocketAddress> serviceList = MyrpcBootstrap.getInstance().getConfiguration().getRegistryConfig().getRegistry().lookup(serviceName, group);
 
             selector = getSelector(serviceList);
 

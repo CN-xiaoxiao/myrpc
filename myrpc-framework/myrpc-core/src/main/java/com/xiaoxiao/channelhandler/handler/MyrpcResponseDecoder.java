@@ -84,10 +84,6 @@ public class MyrpcResponseDecoder extends LengthFieldBasedFrameDecoder {
         myrpcResponse.setRequestId(requestId);
         myrpcResponse.setTimeStamp(timeStamp);
 
-        // Todo 判断是否时心跳检测，如果是直接返回
-//        if (requestType == RequestType.heart_BEAT.getId()) {
-//            return myrpcResponse;
-//        }
 
         // 9、获取负载
         int bodyLength = fullLength - headLength;

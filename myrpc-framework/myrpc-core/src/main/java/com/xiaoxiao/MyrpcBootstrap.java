@@ -198,10 +198,15 @@ public class MyrpcBootstrap {
                 throw new RuntimeException(e);
             }
 
+            // 获取分组信息
+            MyrpcApi myrpcApi = clazz.getAnnotation(MyrpcApi.class);
+            String group = myrpcApi.group();
+
             for (Class<?> anInterface : interfaces) {
                 ServiceConfig<?> serviceConfig = new ServiceConfig<>();
                 serviceConfig.setInterface(anInterface);
                 serviceConfig.setRef(instance);
+                serviceConfig.setGroup(group);
 
                 if (log.isDebugEnabled()) {
                     log.debug("---->已经通过包扫描将服务【{}】发布", anInterface);
@@ -337,6 +342,7 @@ public class MyrpcBootstrap {
 
         // 配置reference
         reference.setRegistry(configuration.getRegistryConfig().getRegistry());
+        reference.setGroup(configuration.getGroup());
 
         return this;
     }
@@ -371,4 +377,8 @@ public class MyrpcBootstrap {
         return this;
     }
 
+    public MyrpcBootstrap group(String group) {
+        this.getConfiguration().setGroup(group);
+        return this;
+    }
 }

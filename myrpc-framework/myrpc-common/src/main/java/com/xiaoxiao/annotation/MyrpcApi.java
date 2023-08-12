@@ -8,4 +8,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface MyrpcApi {
+    // 分组名称
+    String group() default "default";
 }

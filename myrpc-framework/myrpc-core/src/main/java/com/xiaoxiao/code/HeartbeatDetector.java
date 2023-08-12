@@ -24,7 +24,7 @@ public class HeartbeatDetector {
     public static void detectHeartbeat(String serviceName) {
         // 1、从注册中心拉取服务列表并进行连接
         Registry registry = MyrpcBootstrap.getInstance().getConfiguration().getRegistryConfig().getRegistry();
-        List<InetSocketAddress> addresses = registry.lookup(serviceName);
+        List<InetSocketAddress> addresses = registry.lookup(serviceName, MyrpcBootstrap.getInstance().getConfiguration().getGroup());
 
         // 2、将连接进行缓存
         for (InetSocketAddress address : addresses) {

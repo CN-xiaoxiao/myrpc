@@ -35,6 +35,14 @@ public class ZookeeperRegistry extends AbstractRegistry {
         // 服务名称的节点
         String parentNode = Constant.BASE_PROVIDERS_PATH + "/" + service.getInterface().getName();
 
+        // 建立服务节点
+        if (!ZookeeperUtils.exists(zooKeeper, parentNode, null)) {
+            ZookeeperNode zookeeperNode = new ZookeeperNode(parentNode, null);
+            ZookeeperUtils.createNode(zooKeeper, zookeeperNode, null, CreateMode.PERSISTENT);
+        }
+
+        // 建立分组节点
+        parentNode = parentNode + "/" + service.getGroup();
         if (!ZookeeperUtils.exists(zooKeeper, parentNode, null)) {
             ZookeeperNode zookeeperNode = new ZookeeperNode(parentNode, null);
             ZookeeperUtils.createNode(zooKeeper, zookeeperNode, null, CreateMode.PERSISTENT);
@@ -59,9 +67,9 @@ public class ZookeeperRegistry extends AbstractRegistry {
      * @return 服务列表
      */
     @Override
-    public List<InetSocketAddress> lookup(String serviceName) {
+    public List<InetSocketAddress> lookup(String serviceName, String group) {
         // 1、找到服务对应的节点
-        String serviceNode = Constant.BASE_PROVIDERS_PATH + "/" + serviceName;
+        String serviceNode = Constant.BASE_PROVIDERS_PATH + "/" + serviceName + "/" + group;
 
         // 2、从zookeeper中获取其子节点, 192.168.0.1:2151
         List<String> children = ZookeeperUtils.getChildren(zooKeeper, serviceNode, new UpAndDownWatcher());

@@ -39,6 +39,8 @@ public class Configuration {
     private final Map<SocketAddress, RateLimiter> everyIpRateLimiter = new ConcurrentHashMap<>(16);
     // 为每一个ip配置一个熔断器
     private final Map<SocketAddress, CircuitBreaker> everyIpCircuitBreaker = new ConcurrentHashMap<>(16);
+    // 服务分组
+    private String group = "default";
 
     // 读配置信息
     public Configuration() {

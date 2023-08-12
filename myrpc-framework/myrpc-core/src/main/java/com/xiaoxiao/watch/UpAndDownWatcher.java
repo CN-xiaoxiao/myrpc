@@ -26,7 +26,7 @@ public class UpAndDownWatcher implements Watcher {
             String serviceName = getServiceName(watchedEvent.getPath());
 
             Registry registry = MyrpcBootstrap.getInstance().getConfiguration().getRegistryConfig().getRegistry();
-            List<InetSocketAddress> addresses = registry.lookup(serviceName);
+            List<InetSocketAddress> addresses = registry.lookup(serviceName, MyrpcBootstrap.getInstance().getConfiguration().getGroup());
 
             // 处理新增的节点
             for (InetSocketAddress address : addresses) {
